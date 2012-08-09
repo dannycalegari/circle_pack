@@ -28,6 +28,7 @@ using std::vector;
 #include "combinatorics.cc"		// basic combinatorial data structure of a packing
 #include "trigonometry.cc"		// basic functions on packings
 #include "layout.cc"
+#include "branched_cover.cc"
 #include "graphics.cc"
 #include "output.cc"
 #include "input_routine.cc"
@@ -35,17 +36,14 @@ using std::vector;
 
 int main(int argc, char *argv[]){
 
-	packing P;
+	packing P,Q;
 	layout_data L;
 	center_list C;
 	bool finished=false;
 	
-//	ifstream packing_file;
-	
 	while(finished==false){
 		input_routine(P,L,C,finished);
 	};
-
 	setup_graphics();
 	XFlush(display);
 	usleep(100000);
@@ -67,7 +65,8 @@ int main(int argc, char *argv[]){
                 	break;
         };
 	};
-	
+
+
 	
 	return 0;
 }

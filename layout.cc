@@ -16,6 +16,20 @@ struct layout_data{		// a[i] rests on b[i] and c[i] (for i>1) where all three fo
 	vector<int> Gamma;	// Gamma[i] is the index of c[i] in the layout order; i.e. L.a[L.Gamma[i]]=P.v[L.c[i]]
 };
 
+vector<int> invert(layout_data L){	// L.a is a permutation of 0 . . P.v.size(); this returns the inverse
+	vector<int> v;
+	int i,j,k;
+	i=L.a.size();
+	for(j=0;j<i;j++){
+		for(k=0;k<i;k++){
+			if(L.a[k]==j){
+				v.push_back(k);
+			};
+		};
+	};
+	return(v);
+};
+
 struct center_list {	// list of centers, presumably arising from the data of a packing.
 	vector<double> x;	// note that centers are listed *in the order in which they are laid out*
 	vector<double> y;
