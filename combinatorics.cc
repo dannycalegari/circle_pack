@@ -19,8 +19,8 @@
 
 	Main operations to perform on packing; (*) indicates that the function is implemented:
 		(*) subdivide (add a new 6-valent vertex at the center of each edge in an obvious way)
-		( ) amalgamate (remove the vertices adjacent to some specific vertex)
-		( ) branch_cover (branch over specified vertices with specified monodromy)
+		(*) amalgamate (remove the vertices adjacent to some specific vertex)
+		(*) branch_cover (branch over specified vertices with specified monodromy); in file branched_cover.cc
 	
 	contains definitions of packing, adjacency_list, edge_list
 	contains functions which_index, read_packing, write_packing, edge_num, subdivide 	*/
@@ -78,14 +78,14 @@ void read_packing(ifstream &packing_file, packing &P){
 void write_packing(ofstream &packing_file, packing P){
 	int i,j;
 	packing_file << P.v.size() << "\n";
-	for(i=0;i<P.v.size();i++){
+	for(i=0;i<(int) P.v.size();i++){
 		packing_file << P.v[i].a.size() << "   ";
-		for(j=0;j<P.v[i].a.size();j++){
+		for(j=0;j<(int) P.v[i].a.size();j++){
 			packing_file << P.v[i].a[j] << " ";
 		};
 		packing_file << "\n";
 	};
-	for(i=0;i<P.v.size();i++){
+	for(i=0;i<(int) P.v.size();i++){
 		packing_file << P.r[i] << "\n";
 	};
 };
@@ -119,7 +119,7 @@ struct edge_list{
 int edge_num(packing P, int i, int j, edge_list E){	// what is the edge from i to j?
 	int k,l;
 	l=0;
-	for(k=0;k<E.initial.size();k++){
+	for(k=0;k<(int) E.initial.size();k++){
 		if(((E.initial[k]==i)&&(E.terminal[k]==j))||((E.initial[k]==j)&&(E.terminal[k]==i))){
 			l=k;
 		};
@@ -132,8 +132,8 @@ packing subdivide(packing P){	// produces new packing by subdividing each triang
 	edge_list E;
 	adjacency_list L;
 	int i,j,k,l,m;
-	for(i=0;i<P.v.size();i++){
-		for(j=0;j<P.v[i].a.size();j++){
+	for(i=0;i<(int) P.v.size();i++){
+		for(j=0;j<(int) P.v[i].a.size();j++){
 			if(i<P.v[i].a[j]){
 				E.initial.push_back(i);
 				E.terminal.push_back(P.v[i].a[j]);
@@ -142,8 +142,8 @@ packing subdivide(packing P){	// produces new packing by subdividing each triang
 			};
 		};
 	};
-	for(i=0;i<P.v.size();i++){		// Q has vertices coming from vertices of P
-		for(j=0;j<P.v[i].a.size();j++){
+	for(i=0;i<(int) P.v.size();i++){		// Q has vertices coming from vertices of P
+		for(j=0;j<(int) P.v[i].a.size();j++){
 			L.a.push_back(P.v.size()+edge_num(P,i,P.v[i].a[j],E));
 		};
 		Q.v.push_back(L);
@@ -154,7 +154,7 @@ packing subdivide(packing P){	// produces new packing by subdividing each triang
 		};
 		L.a.clear();
 	};
-	for(i=0;i<E.initial.size();i++){	// Q has vertices coming from edges of P
+	for(i=0;i<(int) E.initial.size();i++){	// Q has vertices coming from edges of P
 		j=E.initial[i];
 		k=E.terminal[i];
 		l=P.v[j].a[(which_index(P,j,k)+1)%P.v[j].a.size()];
@@ -183,7 +183,7 @@ packing amalgamate(packing P, int V){	// produces new packing by removing the im
 	Q.v[V].a.clear();
 	int i,j,k,l,m,n,o,p,q,r,s;
 	bool moved_edge;
-	for(i=0;i<P.v[V].a.size();i++){		// for each vertex adjacent to V
+	for(i=0;i<(int) P.v[V].a.size();i++){		// for each vertex adjacent to V
 		j=P.v[V].a[i];					// let j be its index
 		k=P.v[j].a.size();				// let k be the valence of j
 		l=which_index(P,j,V);			// which index is V from j?
@@ -217,7 +217,7 @@ packing amalgamate(packing P, int V){	// produces new packing by removing the im
 	bool found_0_valent;
 	while(pruned==false){				// routine to prune 0-valent vertices
 		found_0_valent=false;			// initialize
-		for(i=0;i<Q.v.size();i++){		// look for 0-valent vertex
+		for(i=0;i<(int) Q.v.size();i++){		// look for 0-valent vertex
 			if(Q.v[i].a.size()==0){
 				found_0_valent=true;
 				q=i;					// q will be the biggest index 0-valent vertex
@@ -227,8 +227,8 @@ packing amalgamate(packing P, int V){	// produces new packing by removing the im
 			pruned=true;	
 		} else {
 			Q.v.erase(Q.v.begin()+q);				// remove vertex q;
-			for(i=0;i<Q.v.size();i++){	
-				for(j=0;j<Q.v[i].a.size();j++){
+			for(i=0;i<(int) Q.v.size();i++){	
+				for(j=0;j<(int) Q.v[i].a.size();j++){
 					k=Q.v[i].a[j];
 					if(k>q){
 						Q.v[i].a[j]--;	// change labels in adjacency lists

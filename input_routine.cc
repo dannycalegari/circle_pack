@@ -72,7 +72,7 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 	           		cout << "fitness " << fitness(P) << " after " << i << " steps. \n";
 	           	};
 				i++;
-				for(j=0;j<P.v.size();j++){
+				for(j=0;j<(int) P.v.size();j++){
 					adjust_angle(P,j,step_size);
 				};
 				rescale(P);
@@ -82,22 +82,22 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 			};
 			break;
 		case 'c':
-			if(L.a.size()<P.v.size()){
+			if((int) L.a.size()<(int) P.v.size()){
 				cout << "need to determine layout order first!\n";
 			} else {
 			cout << "centering circles.\n";
-			determine_centers(P,L,C);
+			C=determine_centers(P,L);
 			cout << "centers determined.\n";
 			};
 			break;
 		case 'e':
-			if(C.x.size()<P.v.size()){
+			if((int) C.p.size()<(int) P.v.size()){
 				cout << "need to determine centers first!\n";
 			} else {
 			cout << "enter name of .eps file to write to:";
 			cin >> s;
 			eps_output_file.open(s.c_str());
-			write_circle_packing(P,L,C,eps_output_file);
+			write_circle_packing(P,C,eps_output_file);
 			eps_output_file.close();
 			cout << "wrote .eps to file " << s << "\n";
 			};
@@ -122,7 +122,7 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 				B.b.push_back(perm);
 			};
 			cout << "branching.\n";
-			P=branch_cover(P,B,L,C);
+			P=branch_cover(P,B,C);
 			write_packing(P);
 			cout << "branched cover determined.\n";
 			break;

@@ -73,15 +73,15 @@ void draw_circle(int x, int y, int r, double col){
         XDrawArc(display, win, gc, x-r, 600-y-r, 2*r, 2*r, 0, 23040);
 };
 
-void draw_circles(packing P, layout_data L, center_list C){
-	if(C.x.size()==P.v.size() && L.a.size()==P.v.size() && P.v.size()>0){
+void draw_circles(packing P, center_list C){
+	if(C.p.size()==P.v.size() && P.v.size()>0){
 	int i,j;
 	int X,Y,R;
-	i=C.x.size();
-	for(j=0;j<L.a.size();j++){
-		X=(int) (300.0+C.x[j]*100.0);
-		Y=(int) (300.0+C.y[j]*100.0);
-		R=(int) (P.r[L.a[j]]*100.0);
+	i=C.p.size();
+	for(j=0;j<(int) P.v.size();j++){
+		X=(int) (300.0+C.p[j].x*100.0);
+		Y=(int) (300.0+C.p[j].y*100.0);
+		R=(int) (P.r[j]*100.0);
 		if(R<0){
 			R=-R;
 		};

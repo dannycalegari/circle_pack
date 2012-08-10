@@ -73,27 +73,10 @@ double correct_ratio(double A, int V){
 };
 
 void adjust_angle(packing &P, int i, double step_size){
-	int j,k;
 	double adj;
 	adj=correct_ratio(angle(P,i),P.v[i].a.size());
 	adj=1.0+((adj-1.0)*step_size);
 	P.r[i]=P.r[i]*adj;
-/*	
-	
-	if(i==0){		// if we are adjusting the outer circle,
-
-		adj=correct_ratio(angle(P,0),P.v[0].a.size());
-		adj=1.0+((adj-1.0)/10.5);
-		P.r[0]=P.r[0]*adj;
-	//	P.r[0]=P.r[0]*correct_ratio(angle(P,0),P.v[0].a.size());
-
-	} else {
-		adj=correct_ratio(angle(P,i),P.v[i].a.size());
-		adj=1.0+((adj-1.0)/10.5);
-		P.r[i]=P.r[i]*adj;
-//		P.r[i]=P.r[i]*correct_ratio(angle(P,i),P.v[i].a.size());	// rescale proportional to angle excess
-	};
-	*/
 };
 
 void rescale(packing &P){

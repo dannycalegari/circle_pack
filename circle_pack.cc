@@ -52,7 +52,7 @@ int main(int argc, char *argv[]){
 	while(1){
 		rescale(P);
 		erase_field();
-		draw_circles(P,L,C);
+		draw_circles(P,C);
 		XNextEvent(display, &report);
     		switch (report.type) {
            		case KeyPress:
