@@ -69,6 +69,18 @@ struct branch_data{
 	vector<permutation> b;	// monodromy of positive loop around branch point i is permutation b[i]
 };
 
+bool branch_point(branch_data B, int i){
+	int j;
+	bool found_match;
+	found_match=false;
+	for(j=0;j<(int) B.v.size();j++){
+		if(B.v[j]==i){
+			found_match=true;
+		};
+	};
+	return(found_match);
+};
+
 vector<int> itinerary(packing P, branch_data B, int v, int sheet){	// monodromy around vertex v on sheet s
 	vector<int> I;
 	int i,j;
@@ -201,29 +213,47 @@ bool circular_order(packing P, int i, int j, int l, int k){	// are (j,l,k) circu
 
 int compute_sheet(packing P, branch_data B, branch_paths Y, int current_sheet, int this_neighbor, int next_neighbor){
 	// when we move from this_neighbor to next_neighbor, how does current_sheet change?
-	int i,j,k;
+	int i,j,k,S;
+	int kk,c_s,t_n,n_n;
 	int computed_sheet;
 	cout << "computing how sheet changes when we move from " << this_neighbor << " to " << next_neighbor << " on sheet " << current_sheet << "\n";
 	computed_sheet = current_sheet;	// initial value
-	for(i=0;i<(int) Y.X.size();i++){
-		if(lies_on(this_neighbor,Y.X[i])){	// only adjust sheet if we lie on a branch cut
-			j=previous(this_neighbor,Y.X[i]);	// path Y.X[i] contains segment j -> this_neighbor -> k
-			k=next(this_neighbor,Y.X[i]);	
-			if(circular_order(P,this_neighbor,j,next_neighbor,k)){	
-				// are j -> next_neighbor -> k in correct circular order in link(this_neighbor)?
-				cout << "braiding positively around " << B.v[i] << "\n";
-				computed_sheet=B.b[i].p[current_sheet];
-				cout << "new current sheet is " << computed_sheet << "\n";
+	if(next_neighbor==0){	// special case
+		/* need to find S so that compute_sheet(S, 0, this_neighbor) = current_sheet and return S */
+		for(S=0;S<degree(B.b[0]);S++){		// test S sheet for 0
+			kk=which_index(P,0,this_neighbor);
+
+			c_s=S;
+			for(k=0;k<kk;k++){		
+				t_n=P.v[0].a[k];
+				n_n=P.v[0].a[(k+1)%P.v[0].a.size()];
+				c_s = compute_sheet(P, B, Y, c_s, t_n, n_n);
 			};
-		} else if(lies_on(next_neighbor,Y.X[i])){
-			j=previous(next_neighbor,Y.X[i]);	// path Y.X[i] contains segment j -> next_neighbor -> k
-			k=next(next_neighbor,Y.X[i]);	
-			if(circular_order(P,next_neighbor,j,this_neighbor,k)){	
-				// are j -> this_neighbor -> k in correct circular order in link(next_neighbor)?
-				cout << "braiding negatively around " << B.v[i] << "\n";
-				computed_sheet=inverse(B.b[i]).p[current_sheet];
-				cout << "new current sheet is " << computed_sheet << "\n";
-			};		
+			if(c_s==current_sheet){		// do we have a match?
+				computed_sheet=S;
+			};
+		};		
+	} else {	
+		for(i=0;i<(int) Y.X.size();i++){
+			if(lies_on(this_neighbor,Y.X[i])){	// only adjust sheet if we lie on a branch cut
+				j=previous(this_neighbor,Y.X[i]);	// path Y.X[i] contains segment j -> this_neighbor -> k
+				k=next(this_neighbor,Y.X[i]);	
+				if(circular_order(P,this_neighbor,j,next_neighbor,k)){	
+					// are j -> next_neighbor -> k in correct circular order in link(this_neighbor)?
+					cout << "braiding positively around " << B.v[i] << "\n";
+					computed_sheet=B.b[i].p[current_sheet];
+					cout << "new current sheet is " << computed_sheet << "\n";
+				};
+			} else if(lies_on(next_neighbor,Y.X[i])){
+				j=previous(next_neighbor,Y.X[i]);	// path Y.X[i] contains segment j -> next_neighbor -> k
+				k=next(next_neighbor,Y.X[i]);	
+				if(circular_order(P,next_neighbor,j,this_neighbor,k)){	
+					// are j -> this_neighbor -> k in correct circular order in link(next_neighbor)?
+					cout << "braiding negatively around " << B.v[i] << "\n";
+					computed_sheet=inverse(B.b[i]).p[current_sheet];
+					cout << "new current sheet is " << computed_sheet << "\n";
+				};		
+			};
 		};
 	};
 	return(computed_sheet);
@@ -251,16 +281,25 @@ packing branched_cover(packing P, branch_data B, center_list C){
 		for(i=0;i<(int) P.v.size();i++){		// for each vertex in the packing P
 			cout << "considering (" << i << "," << sheet << ")\n"; 	// consider vertex (i,sheet). 
 			
-			/*		NOTE: WE NEED TO CONSIDER 0 SEPARATELY!!!		*/
-			
-			if(minimal_sheet(P,B,i,sheet)==sheet){	// If it is minimal in its itinerary, 
-				cout << "minimal in its itinerary.\n";	// we need to compute its adjacency list and then add it.
-				A.a.clear();	// clear the temporary adjacency list.
-				I=itinerary(P,B,i,sheet);
-				branch_degree=(int) I.size();
-				cout << "itinerary has size " << branch_degree << "\n";
-				if(branch_degree>1){	// case of branch point
-					cout << "branch point.\n";
+			if(i==0){	// special case!!! treat it sort of like a branch point
+				A.a.clear();
+				current_sheet=sheet;
+				for(k=0;k<(int) P.v[0].a.size();k++){
+					this_neighbor=P.v[0].a[k];
+					next_neighbor=P.v[0].a[(k+1)%P.v[0].a.size()];
+					A.a.push_back(new_index(P,B,this_neighbor,current_sheet));
+					current_sheet = compute_sheet(P, B, Y, current_sheet, this_neighbor, next_neighbor);
+				};
+				Q.v.push_back(A);
+				Q.r.push_back(0.1);
+			} else if (branch_point(B,i)){	// a branch point (other than 0)
+				if(minimal_sheet(P,B,i,sheet)==sheet){	// If it is minimal in its itinerary, 
+					cout << "minimal in its itinerary.\n";	// we need to compute its adjacency list and then add it.
+					A.a.clear();	// clear the temporary adjacency list.
+					I=itinerary(P,B,i,sheet);
+					branch_degree=(int) I.size();
+					cout << "itinerary has size " << branch_degree << "\n";
+
 					current_sheet=sheet;			// initialize current sheet
 					for(j=0;j<branch_degree;j++){	// loop branch_degree times
 						cout << "on loop " << j << "\n";
@@ -272,16 +311,18 @@ packing branched_cover(packing P, branch_data B, center_list C){
 							current_sheet = compute_sheet(P, B, Y, current_sheet, this_neighbor, next_neighbor);	// how does sheet change?
 						};
 					};
-					
-				} else {
-					for(k=0;k<(int) P.v[i].a.size();k++){	// for each adjacent neighbor,
-						this_neighbor=P.v[i].a[k];
-						current_sheet=compute_sheet(P, B, Y, sheet, i, this_neighbor);
-						A.a.push_back(new_index(P,B,this_neighbor,current_sheet));
-					};
-				};			
+					Q.v.push_back(A);
+					Q.r.push_back(0.1);	
+				};
+			} else {	// an ordinary point, not 0
+				A.a.clear();	// clear the temporary adjacency list.
+				for(k=0;k<(int) P.v[i].a.size();k++){	// for each adjacent neighbor,
+					this_neighbor=P.v[i].a[k];
+					current_sheet=compute_sheet(P, B, Y, sheet, i, this_neighbor);	// need to modify this if this_neighbor is a branch point or 0
+					A.a.push_back(new_index(P,B,this_neighbor,current_sheet));
+				};		
 				Q.v.push_back(A);
-				Q.r.push_back(0.1);
+				Q.r.push_back(0.1);		
 			};
 		};
 	};
