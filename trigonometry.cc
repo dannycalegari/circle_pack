@@ -72,6 +72,19 @@ double correct_ratio(double A, int V){
 	return(desired/current);
 };
 
+void adjust_angles(packing &P, double step_size){
+	vector<double> r;
+	double adj;
+	r.clear();
+	int i;
+	for(i=0;i<(int) P.v.size();i++){
+		adj=correct_ratio(angle(P,i),P.v[i].a.size());
+		adj=1.0+((adj-1.0)*step_size);
+		r.push_back(P.r[i]*adj);
+	};
+	P.r=r;
+};
+
 void adjust_angle(packing &P, int i, double step_size){
 	double adj;
 	adj=correct_ratio(angle(P,i),P.v[i].a.size());

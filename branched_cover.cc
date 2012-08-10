@@ -106,8 +106,8 @@ bool is_to_the_right(point p1, point p2, point p3){	// tests if p3 is on the rig
 
 bool crosses_left(point p1, point p2, point p3){	// does the line p1->p2 cross the line p3->(0.1,0.1)?
 	point p4;
-	p4.x=0.1;
-	p4.y=0.1;
+	p4.x=0.001;
+	p4.y=0.001;
 	if(is_to_the_left(p1,p2,p3) && is_to_the_left(p2,p1,p4) 
 		&& is_to_the_left(p3,p4,p2) && is_to_the_left(p4,p3,p1)){
 		return(true);	
@@ -118,8 +118,8 @@ bool crosses_left(point p1, point p2, point p3){	// does the line p1->p2 cross t
 
 bool crosses_right(point p1, point p2, point p3){	// does the line p1->p2 cross the line p3->(0.1,0.1)?
 	point p4;
-	p4.x=0.1;
-	p4.y=0.1;
+	p4.x=0.001;
+	p4.y=0.001;
 	if(is_to_the_right(p1,p2,p3) && is_to_the_right(p2,p1,p4) 
 		&& is_to_the_right(p3,p4,p2) && is_to_the_right(p4,p3,p1)){
 		return(true);	
@@ -129,22 +129,26 @@ bool crosses_right(point p1, point p2, point p3){	// does the line p1->p2 cross 
 };
 	
 int adjust_sheet(packing P, branch_data B, center_list C, int m, int n, int sheet){	// how does sheet change when we move from m to n?
-	int i,j,new_sheet;
+	int i,j,crossings,new_sheet;
 	new_sheet=sheet;
+	crossings=0;
 	if(m*n==0){	// special case; no branching at infinity
 		return(sheet);
 	} else {
 		for(i=0;i<(int) B.v.size();i++){
 			j=B.v[i];
-//			if(crosses_left(C.x[m],C.y[m],C.x[n],C.y[n],C.x[j],C.y[j])){
 			if(crosses_left(C.p[m],C.p[n],C.p[j])){
-				cout << "line from " << m << " to " << n << " crosses arc from " << j << " positively \n";
+				crossings++;
+//				cout << "line from " << m << " to " << n << " crosses arc from " << j << " positively \n";
 				new_sheet=B.b[i].p[sheet];
-//			} else if(crosses_right(C.x[m],C.y[m],C.x[n],C.y[n],C.x[j],C.y[j])){
 			} else if(crosses_right(C.p[m],C.p[n],C.p[j])){
-				cout << "line from " << m << " to " << n << " crosses arc from " << j << " negatively \n";
+				crossings++;
+//				cout << "line from " << m << " to " << n << " crosses arc from " << j << " negatively \n";
 				new_sheet=inverse(B.b[i]).p[sheet];
 			};
+		};
+		if(crossings>1){
+			cout << crossings << " crossings. \n";
 		};
 		return(new_sheet);
 	};

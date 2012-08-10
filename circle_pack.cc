@@ -49,10 +49,15 @@ int main(int argc, char *argv[]){
 	usleep(100000);
 	XSetInputFocus(display, win, RevertToNone, CurrentTime);
 
+	
 	while(1){
-		rescale(P);
+	
 		erase_field();
 		draw_circles(P,C);
+	//	usleep(100000);
+		XFlush(display);
+
+
 		XNextEvent(display, &report);
     		switch (report.type) {
            		case KeyPress:
