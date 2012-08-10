@@ -250,6 +250,9 @@ packing branched_cover(packing P, branch_data B, center_list C){
 	for(sheet=0;sheet<degree(B.b[0]);sheet++){	// for each sheet
 		for(i=0;i<(int) P.v.size();i++){		// for each vertex in the packing P
 			cout << "considering (" << i << "," << sheet << ")\n"; 	// consider vertex (i,sheet). 
+			
+			/*		NOTE: WE NEED TO CONSIDER 0 SEPARATELY!!!		*/
+			
 			if(minimal_sheet(P,B,i,sheet)==sheet){	// If it is minimal in its itinerary, 
 				cout << "minimal in its itinerary.\n";	// we need to compute its adjacency list and then add it.
 				A.a.clear();	// clear the temporary adjacency list.
