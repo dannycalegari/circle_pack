@@ -85,13 +85,6 @@ void adjust_angles(packing &P, double step_size){
 	P.r=r;
 };
 
-void adjust_angle(packing &P, int i, double step_size){
-	double adj;
-	adj=correct_ratio(angle(P,i),P.v[i].a.size());
-	adj=1.0+((adj-1.0)*step_size);
-	P.r[i]=P.r[i]*adj;
-};
-
 void rescale(packing &P){
 	int i,j;
 	double d;

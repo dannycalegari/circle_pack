@@ -38,6 +38,10 @@ struct point {	// a point has x and y coordinates
 	double y;
 };
 
+double radius_squared(point p){
+	return(p.x*p.x+p.y*p.y);
+};
+
 struct center_list {	// list of centers, presumably arising from the data of a packing.
 	vector<point> p;	
 };

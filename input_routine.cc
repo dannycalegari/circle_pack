@@ -10,6 +10,8 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 	permutation perm;
 	branch_data B;
 	int deg,brpts;
+	path X;
+
 
 	cout << "Current packing has " << P.v.size() << " circles. \n";
 	cout << "Enter command ([h] for help):";
@@ -26,6 +28,7 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 			cout << "[s] to subdivide packing \n";
 			cout << "[a] to amalgamate neighbors of specified vertex \n";
 			cout << "[b] to take a branched cover (warning: buggy!) \n";
+			cout << "[x] to determine branch path \n";
 			cout << "[q] to quit to graphics display \n";
 			break;
 		case 'r':
@@ -120,13 +123,19 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 				B.b.push_back(perm);
 			};
 			cout << "branching.\n";
-			P=branch_cover(P,B,C);
+			P=branched_cover(P,B,C);
 			write_packing(P);
 			cout << "branched cover determined.\n";
 			break;
 		case 'q':
 			cout << "quit to graphics display; focus in graphics window and press [q] again to exit.\n";
 			finished=true;
+			break;
+		case 'x':
+			cout << "enter index:";
+			cin >> i;
+			X=path_to_zero(P,C,i);
+			write_path(X);
 			break;
 		default:
 			break;

@@ -1,4 +1,49 @@
-/* branched_cover.cc	a bit of a hack right now */
+/*	branched_cover.cc (formerly edge_path.cc) algorithm to compute branched cover */
+
+struct path{	// a path is an ordered list of integers
+	vector<int> v;
+};
+
+struct branch_paths{	// an ordered list of paths
+	vector<path> X;
+};
+
+path path_to_zero(packing P, center_list C, int v){	// determines canonical path from v to 0
+	path X;
+	int current_vertex,i,j;
+	current_vertex=v;
+	X.v.push_back(v);
+	while(current_vertex!=0){	// if v=0 this is skipped
+	//	cout << "testing to see if adjacent to 0 " << which_index(P,current_vertex,0) << "\n";
+		if(which_index(P,current_vertex,0)!=-1){	// if 0 is adjacent to v
+			X.v.push_back(0);
+			current_vertex=0;
+		} else {
+			i=0;
+			while(i<(int) P.v[current_vertex].a.size()){
+				j=P.v[current_vertex].a[i];	// get neighbor j
+	//			cout << "is vertex " << j << " further out than vertex " << current_vertex << "?\n";
+	//			cout << "rsqr of " << j << " is " << radius_squared(C.p[j]) << "; rsqr of " << current_vertex 
+	//				<< " is " << radius_squared(C.p[current_vertex]) << "\n";
+				if(radius_squared(C.p[j])>radius_squared(C.p[current_vertex])){	// if j is further out
+					X.v.push_back(j);
+					current_vertex=j;
+					i=(int) P.v[current_vertex].a.size();
+				};
+				i++;
+			};
+		};
+	};
+	return(X);
+};
+
+void write_path(path X){
+	int i;
+	for(i=0;i<(int) X.v.size();i++){
+		cout << X.v[i] << " ";
+	};
+	cout << "\n";
+};
 
 struct permutation{	// a permutation is an ordering on {0,1, . . . , d-1}
 	vector<int> p;	
@@ -29,14 +74,11 @@ vector<int> itinerary(packing P, branch_data B, int v, int sheet){	// monodromy 
 	int i,j;
 	I.push_back(sheet);
 	for(i=0;i<(int) B.v.size();i++){
-//		cout << "testing branch vertex " << i << " ";
 		if(v==B.v[i]){		// if v is a branch vertex
-//			cout << "found a match! computing itinerary. ";
 			j=B.b[i].p[sheet];
 			while(j!=sheet){
 				I.push_back(j);
 				j=B.b[i].p[j];
-//				cout << "added " << j << " ";
 			};
 		};
 	};
@@ -88,113 +130,158 @@ int new_index(packing P, branch_data B, int v, int sheet){
 	return(count);
 };
 
-bool is_to_the_left(point p1, point p2, point p3){	// tests if p3 is on the left of the oriented line p1->p2
-	if(((p3.x - p1.x)*(p2.y - p1.y) - (p3.y - p1.y)*(p2.x - p1.x)) < 0.0){
-		return(true);
-	} else {
-		return(false);
+bool lies_on(int i,path X){		// is index i on path X?
+	int j;
+	bool found_yet;
+	found_yet=false;
+	for(j=0;j<(int) X.v.size();j++){
+		if(X.v[j]==i){
+			found_yet=true;
+		};
 	};
-}
-
-bool is_to_the_right(point p1, point p2, point p3){	// tests if p3 is on the right of the oriented line p1->p2
-	if(((p3.x - p1.x)*(p2.y - p1.y) - (p3.y - p1.y)*(p2.x - p1.x)) > 0.0){
-		return(true);
-	} else {
-		return(false);
-	};
-}
-
-bool crosses_left(point p1, point p2, point p3){	// does the line p1->p2 cross the line p3->(0.1,0.1)?
-	point p4;
-	p4.x=0.001;
-	p4.y=0.001;
-	if(is_to_the_left(p1,p2,p3) && is_to_the_left(p2,p1,p4) 
-		&& is_to_the_left(p3,p4,p2) && is_to_the_left(p4,p3,p1)){
-		return(true);	
-	} else {
-		return(false);
-	};
+	return(found_yet);
 };
 
-bool crosses_right(point p1, point p2, point p3){	// does the line p1->p2 cross the line p3->(0.1,0.1)?
-	point p4;
-	p4.x=0.001;
-	p4.y=0.001;
-	if(is_to_the_right(p1,p2,p3) && is_to_the_right(p2,p1,p4) 
-		&& is_to_the_right(p3,p4,p2) && is_to_the_right(p4,p3,p1)){
-		return(true);	
+int previous(int i,path X){		// what lies before i on path X?
+	int j;
+	j=0;
+	if(X.v[0]==i){	// is this the initial point of X?
+		return(-1);
 	} else {
-		return(false);
-	};
-};
-	
-int adjust_sheet(packing P, branch_data B, center_list C, int m, int n, int sheet){	// how does sheet change when we move from m to n?
-	int i,j,crossings,new_sheet;
-	new_sheet=sheet;
-	crossings=0;
-	if(m*n==0){	// special case; no branching at infinity
-		return(sheet);
-	} else {
-		for(i=0;i<(int) B.v.size();i++){
-			j=B.v[i];
-			if(crosses_left(C.p[m],C.p[n],C.p[j])){
-				crossings++;
-//				cout << "line from " << m << " to " << n << " crosses arc from " << j << " positively \n";
-				new_sheet=B.b[i].p[sheet];
-			} else if(crosses_right(C.p[m],C.p[n],C.p[j])){
-				crossings++;
-//				cout << "line from " << m << " to " << n << " crosses arc from " << j << " negatively \n";
-				new_sheet=inverse(B.b[i]).p[sheet];
+		while(j<(int) X.v.size()){
+			if(X.v[j]==i){		// when we find it,
+				return(X.v[j-1]);	// return the previous one.
 			};
+			j++;
 		};
-		if(crossings>1){
-			cout << crossings << " crossings. \n";
+	};
+	return(-1);
+};
+
+int next(int i,path X){		// what lies after i on path X?
+	int j;
+	j=0;
+	if(X.v[X.v.size()-1]==i){	// is this the terminal point of X?
+		return(-1);
+	} else {
+		while(j<(int) X.v.size()){
+			if(X.v[j]==i){		// when we find it,
+				return(X.v[j+1]);	// return the previous one.
+			};
+			j++;
 		};
-		return(new_sheet);
+	};
+	return(-1);
+};
+
+bool circular_order(packing P, int i, int j, int l, int k){	// are (j,l,k) circularly ordered in link(i)?
+	int valence,a,b,c,d,e,f;
+	valence=(int) P.v[i].a.size();
+	a=which_index(P,i,j);
+	b=which_index(P,i,l);
+	c=which_index(P,i,k);
+	d=b-a;
+	e=c-b;
+	f=a-c;
+	if(d<0){
+		d=d+valence;
+	};
+	if(e<0){
+		e=e+valence;
+	};
+	if(f<0){
+		f=f+valence;
+	};
+	if(d+e+f==valence && d>0 && e>0 && f>0){	// points must be distinct and in the right order
+		return(true);
+	} else {
+		return(false);
 	};
 };
 
-packing branch_cover(packing P, branch_data B, center_list C){	// take a branched cover over P with data B
+int compute_sheet(packing P, branch_data B, branch_paths Y, int current_sheet, int this_neighbor, int next_neighbor){
+	// when we move from this_neighbor to next_neighbor, how does current_sheet change?
+	int i,j,k;
+	int computed_sheet;
+	cout << "computing how sheet changes when we move from " << this_neighbor << " to " << next_neighbor << " on sheet " << current_sheet << "\n";
+	computed_sheet = current_sheet;	// initial value
+	for(i=0;i<(int) Y.X.size();i++){
+		if(lies_on(this_neighbor,Y.X[i])){	// only adjust sheet if we lie on a branch cut
+			j=previous(this_neighbor,Y.X[i]);	// path Y.X[i] contains segment j -> this_neighbor -> k
+			k=next(this_neighbor,Y.X[i]);	
+			if(circular_order(P,this_neighbor,j,next_neighbor,k)){	
+				// are j -> next_neighbor -> k in correct circular order in link(this_neighbor)?
+				cout << "braiding positively around " << B.v[i] << "\n";
+				computed_sheet=B.b[i].p[current_sheet];
+				cout << "new current sheet is " << computed_sheet << "\n";
+			};
+		} else if(lies_on(next_neighbor,Y.X[i])){
+			j=previous(next_neighbor,Y.X[i]);	// path Y.X[i] contains segment j -> next_neighbor -> k
+			k=next(next_neighbor,Y.X[i]);	
+			if(circular_order(P,next_neighbor,j,this_neighbor,k)){	
+				// are j -> this_neighbor -> k in correct circular order in link(next_neighbor)?
+				cout << "braiding negatively around " << B.v[i] << "\n";
+				computed_sheet=inverse(B.b[i]).p[current_sheet];
+				cout << "new current sheet is " << computed_sheet << "\n";
+			};		
+		};
+	};
+	return(computed_sheet);
+};
+
+packing branched_cover(packing P, branch_data B, center_list C){
 	packing Q;
-	adjacency_list A;
-	int j,k,l,m,n,sheet,local_sheet;
+	path X;
+	branch_paths Y;
+	int i,j,k;
+	int branch_degree;
+	int sheet, current_sheet;
+	int this_neighbor, next_neighbor;
 	vector<int> I;
-	for(sheet=0;sheet<degree(B.b[0]);sheet++){
-		for(j=0;j<(int) P.v.size();j++){
-			I=itinerary(P,B,j,sheet);
-			if(minimal_sheet(P,B,j,sheet)==sheet){
-				local_sheet=sheet;
-				A.a.clear();
-				if(I.size()>1){			// case of branch point
-					cout << "branch vertex " << j << "," << sheet << "\n";
-					local_sheet=adjust_sheet(P,B,C,j,P.v[j].a[0],sheet);
-					for(k=0;k<(int) I.size();k++){
-						for(l=0;l<(int) P.v[j].a.size();l++){
-							m=P.v[j].a[l];
-							n=P.v[j].a[(l+1)%P.v[j].a.size()];
-							A.a.push_back(new_index(P,B,P.v[j].a[l],local_sheet));
-							cout << P.v[j].a[l] << "," << local_sheet << " ";
-							local_sheet=adjust_sheet(P,B,C,m,n,local_sheet);
+	adjacency_list A;
+
+	for(i=0;i<(int) B.v.size();i++){	// for each branch point
+		cout << "for branch point " << B.v[i] << " determining path to zero. \n";
+		X=path_to_zero(P,C,B.v[i]);		// determine the path to zero
+		write_path(X);
+		Y.X.push_back(X);				// and add it to the list of branch paths.
+	};
+
+	for(sheet=0;sheet<degree(B.b[0]);sheet++){	// for each sheet
+		for(i=0;i<(int) P.v.size();i++){		// for each vertex in the packing P
+			cout << "considering (" << i << "," << sheet << ")\n"; 	// consider vertex (i,sheet). 
+			if(minimal_sheet(P,B,i,sheet)==sheet){	// If it is minimal in its itinerary, 
+				cout << "minimal in its itinerary.\n";	// we need to compute its adjacency list and then add it.
+				A.a.clear();	// clear the temporary adjacency list.
+				I=itinerary(P,B,i,sheet);
+				branch_degree=(int) I.size();
+				cout << "itinerary has size " << branch_degree << "\n";
+				if(branch_degree>1){	// case of branch point
+					cout << "branch point.\n";
+					current_sheet=sheet;			// initialize current sheet
+					for(j=0;j<branch_degree;j++){	// loop branch_degree times
+						cout << "on loop " << j << "\n";
+						for(k=0;k<(int) P.v[i].a.size();k++){	// for each adjacent neighbor,
+							cout << "looking at " << k << "th neighbor, which is " << this_neighbor << "\n";
+							this_neighbor=P.v[i].a[k];
+							A.a.push_back(new_index(P,B,this_neighbor,current_sheet));	// add to adjacency list
+							next_neighbor=P.v[i].a[(k+1)%P.v[i].a.size()];
+							current_sheet = compute_sheet(P, B, Y, current_sheet, this_neighbor, next_neighbor);	// how does sheet change?
 						};
 					};
-					cout << "\n";
+					
 				} else {
-					cout << "ordinary vertex " << j << "," << sheet << "\n";
-					for(l=0;l<(int) P.v[j].a.size();l++){
-						m=P.v[j].a[l];
-						cout << P.v[j].a[l] << "," << sheet << " ";
-						local_sheet=adjust_sheet(P,B,C,j,m,sheet);
-						A.a.push_back(new_index(P,B,P.v[j].a[l],local_sheet));
+					for(k=0;k<(int) P.v[i].a.size();k++){	// for each adjacent neighbor,
+						this_neighbor=P.v[i].a[k];
+						current_sheet=compute_sheet(P, B, Y, sheet, i, this_neighbor);
+						A.a.push_back(new_index(P,B,this_neighbor,current_sheet));
 					};
-					cout << "\n";
-				};
+				};			
 				Q.v.push_back(A);
 				Q.r.push_back(0.1);
 			};
 		};
 	};
 	Q.r[0]=-1.0;
-	
 	return(Q);
 };
-
