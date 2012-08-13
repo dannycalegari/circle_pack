@@ -29,7 +29,6 @@ using std::vector;
 #include "trigonometry.cc"		// basic functions on packings
 #include "layout.cc"
 #include "branched_cover.cc"
-//#include "edge_path.cc"
 #include "graphics.cc"
 #include "output.cc"
 #include "input_routine.cc"

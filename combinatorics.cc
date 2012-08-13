@@ -41,7 +41,7 @@ struct packing {	// packing
 
 
 
-int which_index(packing P, int i, int j){	// if j is adjacent to i in P, what is its index?
+int which_index(packing P, int i, int j){	// if j is adjacent to i in P, what is k so that P.v[i].a[k]=j?
 	int k,l,m;
 	k=P.v[i].a.size();	// valence of vertex i
 	m=-1;				// default value

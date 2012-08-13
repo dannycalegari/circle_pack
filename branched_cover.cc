@@ -1,18 +1,5 @@
-/*	branched_cover.cc (formerly edge_path.cc) algorithm to compute branched cover */
-
-/* as it stands, this file is a complete hack; it can be easily made much better.
-	To do: 
-	
-	1. the function new_index should be replaced by an approximation 
-			new_index(i,s) = s*P.v.size() + i 
-	which is then corrected at the end after all adjacency data is computed. 
-	
-	2. the function compute_sheet tests *every* vertex. instead the new packing should
-	be written as the trivial branched covering (i.e. (i,s) is adjacent to (j,s) if
-	and only if i is adjacent to j) and then adjusted *only* on indices i which are
-	on a branch cut, or next to one. I.e. in effect we should build a trivial cover,
-	then cut it and reglue it. Probably the easy thing to do is to write these
-	functions from scratch. */
+/*	branched_cover.cc (formerly edge_path.cc) algorithm to compute branched cover 
+	new version 0.3 August 13, 2012*/
    
 struct path{	// a path is an ordered list of integers
 	vector<int> v;
@@ -24,7 +11,7 @@ struct branch_paths{	// an ordered list of paths
 
 path path_to_zero(packing P, center_list C, int v){	// determines canonical path from v to 0
 	path X;
-	int current_vertex,i,j;
+	int current_vertex,i,j,k;
 	current_vertex=v;
 	X.v.push_back(v);
 	while(current_vertex!=0){	// if v=0 this is skipped
@@ -34,18 +21,16 @@ path path_to_zero(packing P, center_list C, int v){	// determines canonical path
 			current_vertex=0;
 		} else {
 			i=0;
-			while(i<(int) P.v[current_vertex].a.size()){
+			k=P.v[current_vertex].a[0];	// candidate biggest neighbor
+			for(i=0;i<(int) P.v[current_vertex].a.size();i++){
 				j=P.v[current_vertex].a[i];	// get neighbor j
-	//			cout << "is vertex " << j << " further out than vertex " << current_vertex << "?\n";
-	//			cout << "rsqr of " << j << " is " << radius_squared(C.p[j]) << "; rsqr of " << current_vertex 
-	//				<< " is " << radius_squared(C.p[current_vertex]) << "\n";
-				if(radius_squared(C.p[j])>radius_squared(C.p[current_vertex])){	// if j is further out
-					X.v.push_back(j);
-					current_vertex=j;
-					i=(int) P.v[current_vertex].a.size();
+
+				if(radius_squared(C.p[j])>radius_squared(C.p[k])){	// if j is further out than k
+					k=j;	// update candidate biggest neighbor 
 				};
-				i++;
 			};
+			X.v.push_back(k);
+			current_vertex=k;
 		};
 	};
 	return(X);
@@ -74,6 +59,17 @@ permutation inverse(permutation P){	// returns the inverse of a permutation
 	return(Q);
 };
 
+int orbit_size(permutation P, int i){
+	int j,k;
+	j=1;
+	k=P.p[i];
+	while(k!=i){
+		j++;
+		k=P.p[k];
+	};
+	return(j);
+};
+
 int degree(permutation S){
 	return(S.p.size());
 };
@@ -95,251 +91,218 @@ bool branch_point(branch_data B, int i){
 	return(found_match);
 };
 
-vector<int> itinerary(packing P, branch_data B, int v, int sheet){	// monodromy around vertex v on sheet s
-	vector<int> I;
-	int i,j;
-	I.push_back(sheet);
+int naive_new_index(int size_of_P, int v, int sheet){	// index in branched cover
+	return(sheet*size_of_P+v);
+};
+
+	/* note: naive_new_index will be adjusted later. We will remove new indices
+	corresponding to pairs (v,s) where v is a branch point, 
+	and itinerary(v,s) contains s' < s. */
+	
+void compute_branch_cuts(branch_paths &Y, packing P, branch_data B, center_list C){
+	int i;
+	path X;
+	for(i=0;i<(int) B.v.size();i++){	// for each branch point
+	//	cout << "for branch point " << B.v[i] << " determining path to zero. \n";
+		X=path_to_zero(P,C,B.v[i]);		// determine the path to zero
+		write_path(X);
+		Y.X.push_back(X);				// and add it to the list of branch paths.
+	};
+};
+
+void initialize_trivial_cover(packing &Q, packing P, int degree){
+	int size_of_P, i, j, s;
+	size_of_P = (int) P.v.size();
+	adjacency_list A;
+	for(s=0;s<degree;s++){
+		for(i=0;i<size_of_P;i++){
+			A.a.clear();
+			for(j=0;j<(int) P.v[i].a.size();j++){
+				A.a.push_back(naive_new_index(size_of_P,P.v[i].a[j],s));	// should be inline?
+			};
+			Q.v.push_back(A);
+			Q.r.push_back(1.0);	// should we make an educated guess about new radius?
+		};
+	};
+	Q.r[0]=-1.0;
+};
+
+
+void generate_elimination_list(packing P, branch_data B, vector<int> &E, vector<int> &F){
+	vector<int> L,M;
+	int i,j,size_of_P,sheet,new_sheet,minimum_sheet;
+	bool found_smaller;
+	size_of_P = (int) P.v.size();
+
 	for(i=0;i<(int) B.v.size();i++){
-		if(v==B.v[i]){		// if v is a branch vertex
-			j=B.b[i].p[sheet];
-			while(j!=sheet){
-				I.push_back(j);
-				j=B.b[i].p[j];
-			};
-		};
-	};
-	return(I);
-};
-
-int minimal_sheet(packing P, branch_data B, int v, int sheet){ 
-	/* vertex in branched cover given by a pair (v,s). If v
-	is not a branched point, this is unique, and minimal_sheet = s.
-	Otherwise minimal_sheet is the minimal value over the itinerary
-	I(P,B,v,s) which is a vector of the set of s' with (v,s)=(v,s') */
-	vector<int> I;
-	int i,least;
-	I=itinerary(P,B,v,sheet);
-	least=sheet;
-	for(i=0;i<(int) I.size();i++){
-		if(I[i]<least){
-			least=I[i];
-		};
-	};
-	return(least);
-};
-
-int new_index(packing P, branch_data B, int v, int sheet){	
-	/* vertices in branched cover are given by a pair (v,s)
-	where v is a vertex in the original packing, and s is a sheet,
-	where s runs from 0 to degree-1. If v is a branch point, the
-	sheet is not unique, but runs over the itinerary I(P,B,v,s).
-	new_index(P,B,v,s) returns the index in the branched cover
-	associated to (v,s). */
-	int i,j,min_sheet,count;
-	min_sheet=minimal_sheet(P,B,v,sheet);
-	count=-1;
-	for(i=0;i<=min_sheet;i++){
-		if(i<min_sheet){
-			for(j=0;j<(int) P.v.size();j++){
-				if(minimal_sheet(P,B,j,i)==i){
-					count++;
+		j=B.v[i];								// j is ith branch point
+		for(sheet=0;sheet<degree(B.b[0]);sheet++){	// test sheet to eliminate
+			found_smaller=false;
+			new_sheet=B.b[i].p[sheet];	// compute
+			minimum_sheet=sheet;
+			while(new_sheet!=sheet){
+				if(new_sheet<sheet){
+					found_smaller=true;
+					if(new_sheet<minimum_sheet){
+						minimum_sheet=new_sheet;
+					};
 				};
+				new_sheet=B.b[i].p[new_sheet];
 			};
-		} else {
-			for(j=0;j<=v;j++){
-				if(minimal_sheet(P,B,j,i)==i){
-					count++;
+			if(found_smaller==true){
+				L.push_back(naive_new_index(size_of_P,j,sheet));	// mark (j,sheet) for elimination
+				M.push_back(naive_new_index(size_of_P,j,minimum_sheet));	// remember where to redirect links to this vertex
+			};
+		};
+	};
+	E=L;
+	F=M;
+};
+
+void remove_spurious_points(vector<int> E, vector<int> F, packing &Q){
+	int i,j,k,e;
+	for(i=0;i<(int) E.size();i++){	// first adjust pointers to replacements
+		for(j=0;j<(int) Q.v.size();j++){
+			for(k=0;k<(int) Q.v[j].a.size();k++){
+				if(Q.v[j].a[k]==E[i]){
+					Q.v[j].a[k]=F[i];
 				};
 			};
 		};
 	};
-	return(count);
-};
-
-bool lies_on(int i,path X){		// is index i on path X?
-	int j;
-	bool found_yet;
-	found_yet=false;
-	for(j=0;j<(int) X.v.size();j++){
-		if(X.v[j]==i){
-			found_yet=true;
-		};
-	};
-	return(found_yet);
-};
-
-int previous(int i,path X){		// what lies before i on path X?
-	int j;
-	j=0;
-	if(X.v[0]==i){	// is this the initial point of X?
-		return(-1);
-	} else {
-		while(j<(int) X.v.size()){
-			if(X.v[j]==i){		// when we find it,
-				return(X.v[j-1]);	// return the previous one.
-			};
-			j++;
-		};
-	};
-	return(-1);
-};
-
-int next(int i,path X){		// what lies after i on path X?
-	int j;
-	j=0;
-	if(X.v[X.v.size()-1]==i){	// is this the terminal point of X?
-		return(-1);
-	} else {
-		while(j<(int) X.v.size()){
-			if(X.v[j]==i){		// when we find it,
-				return(X.v[j+1]);	// return the previous one.
-			};
-			j++;
-		};
-	};
-	return(-1);
-};
-
-bool circular_order(packing P, int i, int j, int l, int k){	// are (j,l,k) circularly ordered in link(i)?
-	int valence,a,b,c,d,e,f;
-	valence=(int) P.v[i].a.size();
-	a=which_index(P,i,j);
-	b=which_index(P,i,l);
-	c=which_index(P,i,k);
-	d=b-a;
-	e=c-b;
-	f=a-c;
-	if(d<0){
-		d=d+valence;
-	};
-	if(e<0){
-		e=e+valence;
-	};
-	if(f<0){
-		f=f+valence;
-	};
-	if(d+e+f==valence && d>0 && e>0 && f>0){	// points must be distinct and in the right order
-		return(true);
-	} else {
-		return(false);
-	};
-};
-
-int compute_sheet(packing P, branch_data B, branch_paths Y, int current_sheet, int this_neighbor, int next_neighbor){
-	// when we move from this_neighbor to next_neighbor, how does current_sheet change?
-	int i,j,k,S;
-	int kk,c_s,t_n,n_n;
-	int computed_sheet;
-	cout << "computing how sheet changes when we move from " << this_neighbor << " to " << next_neighbor << " on sheet " << current_sheet << "\n";
-	computed_sheet = current_sheet;	// initial value
-	if(next_neighbor==0){	// special case
-		/* need to find S so that compute_sheet(S, 0, this_neighbor) = current_sheet and return S */
-		for(S=0;S<degree(B.b[0]);S++){		// test S sheet for 0
-			kk=which_index(P,0,this_neighbor);
-
-			c_s=S;
-			for(k=0;k<kk;k++){		
-				t_n=P.v[0].a[k];
-				n_n=P.v[0].a[(k+1)%P.v[0].a.size()];
-				c_s = compute_sheet(P, B, Y, c_s, t_n, n_n);
-			};
-			if(c_s==current_sheet){		// do we have a match?
-				computed_sheet=S;
-			};
-		};		
-	} else {	
-		for(i=0;i<(int) Y.X.size();i++){
-			if(lies_on(this_neighbor,Y.X[i])){	// only adjust sheet if we lie on a branch cut
-				j=previous(this_neighbor,Y.X[i]);	// path Y.X[i] contains segment j -> this_neighbor -> k
-				k=next(this_neighbor,Y.X[i]);	
-				if(circular_order(P,this_neighbor,j,next_neighbor,k)){	
-					// are j -> next_neighbor -> k in correct circular order in link(this_neighbor)?
-					cout << "braiding positively around " << B.v[i] << "\n";
-					computed_sheet=B.b[i].p[current_sheet];
-					cout << "new current sheet is " << computed_sheet << "\n";
+	for(i=0;i<(int) E.size();i++){	// then eliminate vertices and adjust pointers
+		e=E[i];
+		Q.v.erase(Q.v.begin()+e);	// remove entry e
+		for(j=0;j<(int) Q.v.size();j++){
+			for(k=0;k<(int) Q.v[j].a.size();k++){
+				if(Q.v[j].a[k]>=e){
+					Q.v[j].a[k]--;
 				};
-			} else if(lies_on(next_neighbor,Y.X[i])){
-				j=previous(next_neighbor,Y.X[i]);	// path Y.X[i] contains segment j -> next_neighbor -> k
-				k=next(next_neighbor,Y.X[i]);	
-				if(circular_order(P,next_neighbor,j,this_neighbor,k)){	
-					// are j -> this_neighbor -> k in correct circular order in link(next_neighbor)?
-					cout << "braiding negatively around " << B.v[i] << "\n";
-					computed_sheet=inverse(B.b[i]).p[current_sheet];
-					cout << "new current sheet is " << computed_sheet << "\n";
-				};		
 			};
 		};
-	};
-	return(computed_sheet);
+	};	
 };
+	
 
 packing branched_cover(packing P, branch_data B, center_list C){
 	packing Q;
 	path X;
 	branch_paths Y;
-	int i,j,k;
+	int i,j,k,l,m,n,o,r,sheet,new_sheet,current_sheet;
 	int branch_degree;
-	int sheet, current_sheet;
-	int this_neighbor, next_neighbor;
-	vector<int> I;
+	permutation sigma;
+	int size_of_P;
 	adjacency_list A;
-
+	int valence, next_m, prev_m;
+	
+	branch_degree=degree(B.b[0]);	// don't want to keep computing this.
+	size_of_P = (int) P.v.size();
+	
+	/* first step: compute the set of branch cuts. This uses the center_list C to
+	compute canonical paths to 0; an alternative would be to choose some combinatorial
+	geodesic path (this would be slower) 
+	
 	for(i=0;i<(int) B.v.size();i++){	// for each branch point
 		cout << "for branch point " << B.v[i] << " determining path to zero. \n";
 		X=path_to_zero(P,C,B.v[i]);		// determine the path to zero
 		write_path(X);
 		Y.X.push_back(X);				// and add it to the list of branch paths.
-	};
-
-	for(sheet=0;sheet<degree(B.b[0]);sheet++){	// for each sheet
-		for(i=0;i<(int) P.v.size();i++){		// for each vertex in the packing P
-			cout << "considering (" << i << "," << sheet << ")\n"; 	// consider vertex (i,sheet). 
-			
-			if(i==0){	// special case!!! treat it sort of like a branch point
-				A.a.clear();
-				current_sheet=sheet;
-				for(k=0;k<(int) P.v[0].a.size();k++){
-					this_neighbor=P.v[0].a[k];
-					next_neighbor=P.v[0].a[(k+1)%P.v[0].a.size()];
-					A.a.push_back(new_index(P,B,this_neighbor,current_sheet));
-					current_sheet = compute_sheet(P, B, Y, current_sheet, this_neighbor, next_neighbor);
-				};
-				Q.v.push_back(A);
-				Q.r.push_back(0.1);
-			} else if (branch_point(B,i)){	// a branch point (other than 0)
-				if(minimal_sheet(P,B,i,sheet)==sheet){	// If it is minimal in its itinerary, 
-					cout << "minimal in its itinerary.\n";	// we need to compute its adjacency list and then add it.
-					A.a.clear();	// clear the temporary adjacency list.
-					I=itinerary(P,B,i,sheet);
-					branch_degree=(int) I.size();
-					cout << "itinerary has size " << branch_degree << "\n";
-
-					current_sheet=sheet;			// initialize current sheet
-					for(j=0;j<branch_degree;j++){	// loop branch_degree times
-						cout << "on loop " << j << "\n";
-						for(k=0;k<(int) P.v[i].a.size();k++){	// for each adjacent neighbor,
-							cout << "looking at " << k << "th neighbor, which is " << this_neighbor << "\n";
-							this_neighbor=P.v[i].a[k];
-							A.a.push_back(new_index(P,B,this_neighbor,current_sheet));	// add to adjacency list
-							next_neighbor=P.v[i].a[(k+1)%P.v[i].a.size()];
-							current_sheet = compute_sheet(P, B, Y, current_sheet, this_neighbor, next_neighbor);	// how does sheet change?
-						};
+	};	*/
+	
+	compute_branch_cuts(Y,P,B,C);
+	
+	/* second step: initialize Q as the product cover P x {0, . . , d-1} */
+	
+	initialize_trivial_cover(Q,P,branch_degree);
+	
+	/* third step: for each vertex on a branch cut, adjust value of neighbor */
+	
+	// generic case
+	for(i=0;i<(int) B.v.size();i++){	// for each branch point
+		sigma=B.b[i];	// read in monodromy permutation about branch point i
+		X=Y.X[i];		// read in branch path
+		for(sheet=0;sheet<branch_degree;sheet++){
+			if(sigma.p[sheet]!=sheet){	// if monodromy around branch point i does not fix sheet sheet,
+				new_sheet=sigma.p[sheet];	// let new_sheet be the new sheet
+				for(l=1;l<(int) X.v.size()-1;l++){	// for each point on *interior* of branch cut
+					m=X.v[l];	// m is vertex on branch cut i
+					cout << "(" << m << "," << sheet << ")\n";
+	
+					/*
+					for all neighbors o of m on the positive side of the branch, replace
+					the edge (m,sheet) -> (o,sheet) with (m,sheet) -> (o,sigma(sheet)) and replace the
+					edge (o,sigma(sheet)) -> (m,sigma(sheet)) with (o,sigma(sheet)) -> (m,sheet).
+					*/
+					
+					valence=P.v[m].a.size();	// valence of m
+					next_m=which_index(P,m,X.v[l+1]);	// P.v[m].a[next_m]=X.v[l+1]
+					prev_m=which_index(P,m,X.v[l-1]);	// P.v[m].a[prev_m]=X.v[l-1]
+					if(prev_m<next_m){
+						prev_m=prev_m+valence;
 					};
-					Q.v.push_back(A);
-					Q.r.push_back(0.1);	
+					for(n=next_m+1;n<prev_m;n++){
+						o=P.v[m].a[n%valence];
+						r=which_index(P,o,m);
+						cout << "adjacency index " << r << " has index " << o << "\n";
+						Q.v[naive_new_index(size_of_P,m,sheet)].a[n%valence]=naive_new_index(size_of_P,o,new_sheet);	
+						Q.v[naive_new_index(size_of_P,o,new_sheet)].a[r]=naive_new_index(size_of_P,m,sheet);
+					};
 				};
-			} else {	// an ordinary point, not 0
-				A.a.clear();	// clear the temporary adjacency list.
-				for(k=0;k<(int) P.v[i].a.size();k++){	// for each adjacent neighbor,
-					this_neighbor=P.v[i].a[k];
-					current_sheet=compute_sheet(P, B, Y, sheet, i, this_neighbor);	// need to modify this if this_neighbor is a branch point or 0
-					A.a.push_back(new_index(P,B,this_neighbor,current_sheet));
-				};		
-				Q.v.push_back(A);
-				Q.r.push_back(0.1);		
 			};
 		};
 	};
-	Q.r[0]=-1.0;
+	
+	// special case for vertex 0 
+	for(sheet=0;sheet<branch_degree;sheet++){
+		current_sheet=sheet;
+		cout << "(0," << sheet << ")\n";
+		valence=P.v[0].a.size();	// valence of 0
+		for(i=0;i<valence;i++){
+			j=P.v[0].a[i];
+			k=which_index(P,0,j);
+			cout << "adjacency index " << k << " has index " << j << "\n";
+			Q.v[naive_new_index(size_of_P,0,sheet)].a[i]=naive_new_index(size_of_P,j,current_sheet);
+			Q.v[naive_new_index(size_of_P,j,current_sheet)].a[k]=naive_new_index(size_of_P,0,sheet);
+			for(l=0;l<(int) Y.X.size();l++){
+				if(j==Y.X[l].v[Y.X[l].v.size()-2]){	// is j on the branch cut?
+					current_sheet = B.b[l].p[current_sheet];	// apply monodromy
+				};
+			};
+		};
+	};
+	
+	// special case for each branch vertex 
+	for(sheet=0;sheet<branch_degree;sheet++){
+		for(i=0;i<(int) B.v.size();i++){	// for each branch point 
+			j=B.v[i];						// which we call j
+			valence=P.v[j].a.size();
+			current_sheet=sheet;
+			cout << "(" << j << "," << sheet << ")\n";
+			k=orbit_size(B.b[i],sheet);
+			if(k>1){			// if this is a genuine branch point
+	//			Q.v[naive_new_index(size_of_P,j,sheet)].a.clear();
+				A.a.clear();	// initialize adjacency list
+				for(l=0;l<k*valence;l++){	
+					m=P.v[j].a[l%valence];
+					cout << "adjacency index " << l << " has index " << m << "\n";
+					A.a.push_back(naive_new_index(size_of_P,m,current_sheet));
+					if(m==Y.X[i].v[1]){	// if a[l] is on the branch cut,
+						current_sheet=B.b[i].p[current_sheet];	// apply monodromy
+					};
+				};
+				Q.v[naive_new_index(size_of_P,j,sheet)]=A;	// copy modified adjacency list
+			};
+		};
+	};
+	
+	/* fourth step: prune the "extraneous" elements of Q by removing redundant
+	vertices (those corresponding to (v,s) where v is a branch point and s > min_s)
+	and adjusting indices of things pointing to them. */
+	
+	
+	vector<int> E,F;
+	generate_elimination_list(P,B,E,F);
+	remove_spurious_points(E,F,Q);	
+
 	return(Q);
 };
