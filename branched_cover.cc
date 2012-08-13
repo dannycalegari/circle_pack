@@ -1,5 +1,19 @@
 /*	branched_cover.cc (formerly edge_path.cc) algorithm to compute branched cover */
 
+/* as it stands, this file is a complete hack; it can be easily made much better.
+	To do: 
+	
+	1. the function new_index should be replaced by an approximation 
+			new_index(i,s) = s*P.v.size() + i 
+	which is then corrected at the end after all adjacency data is computed. 
+	
+	2. the function compute_sheet tests *every* vertex. instead the new packing should
+	be written as the trivial branched covering (i.e. (i,s) is adjacent to (j,s) if
+	and only if i is adjacent to j) and then adjusted *only* on indices i which are
+	on a branch cut, or next to one. I.e. in effect we should build a trivial cover,
+	then cut it and reglue it. Probably the easy thing to do is to write these
+	functions from scratch. */
+   
 struct path{	// a path is an ordered list of integers
 	vector<int> v;
 };

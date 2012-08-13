@@ -11,7 +11,8 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 	branch_data B;
 	int deg,brpts;
 	path X;
-
+	point p;
+	double x,y;
 
 	cout << "Current packing has " << P.v.size() << " circles. \n";
 	cout << "Enter command ([h] for help):";
@@ -27,6 +28,7 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 			cout << "[e] to write .eps output \n";
 			cout << "[s] to subdivide packing \n";
 			cout << "[a] to amalgamate neighbors of specified vertex \n";
+			cout << "[f] to find closest center to specified point \n";
 			cout << "[b] to take a branched cover (warning: buggy!) \n";
 			cout << "[q] to quit to graphics display \n";
 			break;
@@ -94,12 +96,24 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 			if((int) C.p.size()<(int) P.v.size()){
 				cout << "need to determine centers first!\n";
 			} else {
-			cout << "enter name of .eps file to write to:";
-			cin >> s;
-			eps_output_file.open(s.c_str());
-			write_circle_packing(P,C,eps_output_file);
-			eps_output_file.close();
-			cout << "wrote .eps to file " << s << "\n";
+				cout << "enter name of .eps file to write to:";
+				cin >> s;
+				eps_output_file.open(s.c_str());
+				write_circle_packing(P,C,eps_output_file);
+				eps_output_file.close();
+				cout << "wrote .eps to file " << s << "\n";
+			};
+			break;
+		case 'f':
+			if((int) C.p.size()<(int) P.v.size()){
+				cout << "need to determine centers first!\n";
+			} else {
+				cout << "enter coordinates of point:";
+				cin >> x >> y;
+				p.x=x;
+				p.y=y;
+				cout << "closest center to " << x << ", " << y << " is vertex ";
+				cout << closest_center(C,p) << "\n";
 			};
 			break;
 		case 'b':

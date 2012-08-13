@@ -38,6 +38,21 @@ struct point {	// a point has x and y coordinates
 	double y;
 };
 
+point operator+(point p, point q){
+	point r;
+	r.x=p.x+q.x;
+	r.y=p.y+q.y;
+	return(r);
+};
+
+point operator-(point p, point q){
+	point r;
+	r.x=p.x-q.x;
+	r.y=p.y-q.y;
+	return(r);
+};
+
+
 double radius_squared(point p){
 	return(p.x*p.x+p.y*p.y);
 };
@@ -200,5 +215,19 @@ center_list determine_centers(packing P, layout_data L){
 	
 	C=reorder(L,C);	// now put C in vertex order
 	return(C);
+};
+
+int closest_center(center_list C, point p){	// returns index of center closest to p
+	int i, current_closest;
+	current_closest=1;	// initial value
+	for(i=1;i<(int) C.p.size();i++){
+		if(radius_squared(p-C.p[i])<radius_squared(p-C.p[current_closest])){
+			cout << "testing index " << i << "\n";
+			cout << radius_squared(p-C.p[i]) << " is smaller than " <<
+			radius_squared(p-C.p[current_closest]) << "\n";
+			current_closest=i;
+		};
+	};
+	return(current_closest);
 };
 
