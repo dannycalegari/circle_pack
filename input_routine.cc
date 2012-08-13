@@ -71,8 +71,7 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 			cin >> step_size;
 			cout << "determining packing radii.\n";
 		 	i=0;
-    //        while(fitness(P)>0.000000001){
-       		while(fitness(P)>0.001){
+            while(fitness(P)>0.000000001){
            		if(i%100==0){
 	           		cout << "fitness " << fitness(P) << " after " << i << " steps. \n";
 	           	};
