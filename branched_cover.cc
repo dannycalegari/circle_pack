@@ -180,6 +180,11 @@ void remove_spurious_points(vector<int> E, vector<int> F, packing &Q){
 				};
 			};
 		};
+		for(j=0;j<(int) E.size();j++){	// readjust elimination list
+			if(E[j]>=e){
+				E[j]--;
+			};
+		};
 	};	
 };
 	
@@ -303,6 +308,7 @@ packing branched_cover(packing P, branch_data B, center_list C){
 	vector<int> E,F;
 	generate_elimination_list(P,B,E,F);
 	remove_spurious_points(E,F,Q);	
+
 
 	return(Q);
 };
