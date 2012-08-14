@@ -259,7 +259,7 @@ packing branched_cover(packing P, branch_data B, center_list C){
 		valence=P.v[0].a.size();	// valence of 0
 		for(i=0;i<valence;i++){
 			j=P.v[0].a[i];
-			k=which_index(P,0,j);
+			k=which_index(P,j,0);
 			cout << "adjacency index " << k << " has index " << j << "\n";
 			Q.v[naive_new_index(size_of_P,0,sheet)].a[i]=naive_new_index(size_of_P,j,current_sheet);
 			Q.v[naive_new_index(size_of_P,j,current_sheet)].a[k]=naive_new_index(size_of_P,0,sheet);
