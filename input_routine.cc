@@ -127,6 +127,9 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 			};
 			break;
 		case 'b':
+			cout << "branch points should not be adjacent to each other or to 0.\n";
+			cout << "0 should not be a branch point.\n";
+			cout << "good locations for branch points can be found with [f].\n";
 			cout << "enter degree of branched cover:";
 			cin >> deg;
 			cout << "enter number of branch points:";

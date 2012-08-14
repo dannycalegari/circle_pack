@@ -112,7 +112,9 @@ void compute_branch_cuts(branch_paths &Y, packing P, branch_data B, center_list 
 
 void initialize_trivial_cover(packing &Q, packing P, int degree){
 	int size_of_P, i, j, s;
+	double guess_radius;
 	size_of_P = (int) P.v.size();
+	guess_radius=1.0/sqrt((double) size_of_P * (double) degree);
 	adjacency_list A;
 	for(s=0;s<degree;s++){
 		for(i=0;i<size_of_P;i++){
@@ -121,7 +123,7 @@ void initialize_trivial_cover(packing &Q, packing P, int degree){
 				A.a.push_back(naive_new_index(size_of_P,P.v[i].a[j],s));	// should be inline?
 			};
 			Q.v.push_back(A);
-			Q.r.push_back(1.0);	// should we make an educated guess about new radius?
+			Q.r.push_back(guess_radius);	// should we make an educated guess about new radius?
 		};
 	};
 	Q.r[0]=-1.0;
@@ -248,7 +250,7 @@ packing branched_cover(packing P, branch_data B, center_list C){
 					for(n=next_m+1;n<prev_m;n++){
 						o=P.v[m].a[n%valence];
 						r=which_index(P,o,m);
-						cout << "adjacency index " << r << " has index " << o << "\n";
+						cout << "(" << m << "," << sheet << ") <-> (" << o << "," << new_sheet << ")\n";
 						Q.v[naive_new_index(size_of_P,m,sheet)].a[n%valence]=naive_new_index(size_of_P,o,new_sheet);	
 						Q.v[naive_new_index(size_of_P,o,new_sheet)].a[r]=naive_new_index(size_of_P,m,sheet);
 					};
@@ -262,15 +264,16 @@ packing branched_cover(packing P, branch_data B, center_list C){
 		current_sheet=sheet;
 		cout << "(0," << sheet << ")\n";
 		valence=P.v[0].a.size();	// valence of 0
-		for(i=0;i<valence;i++){
+		for(i=valence-1;i>=0;i--){	// need to go around 0 in the *opposite* direction, since it hits the branch cuts the other way
 			j=P.v[0].a[i];
 			k=which_index(P,j,0);
-			cout << "adjacency index " << k << " has index " << j << "\n";
+			cout << "(" << 0 << "," << sheet << ") <-> (" << j << "," << current_sheet << ")\n";
 			Q.v[naive_new_index(size_of_P,0,sheet)].a[i]=naive_new_index(size_of_P,j,current_sheet);
 			Q.v[naive_new_index(size_of_P,j,current_sheet)].a[k]=naive_new_index(size_of_P,0,sheet);
 			for(l=0;l<(int) Y.X.size();l++){
 				if(j==Y.X[l].v[Y.X[l].v.size()-2]){	// is j on the branch cut?
 					current_sheet = B.b[l].p[current_sheet];	// apply monodromy
+					cout << "applying monodromy; current sheet is " << current_sheet << "\n";
 				};
 			};
 		};
@@ -289,7 +292,7 @@ packing branched_cover(packing P, branch_data B, center_list C){
 				A.a.clear();	// initialize adjacency list
 				for(l=0;l<k*valence;l++){	
 					m=P.v[j].a[l%valence];
-					cout << "adjacency index " << l << " has index " << m << "\n";
+					cout << "(" << j << "," << sheet << "*) -> (" << m << "," << current_sheet << ")\n";
 					A.a.push_back(naive_new_index(size_of_P,m,current_sheet));
 					if(m==Y.X[i].v[1]){	// if a[l] is on the branch cut,
 						current_sheet=B.b[i].p[current_sheet];	// apply monodromy
