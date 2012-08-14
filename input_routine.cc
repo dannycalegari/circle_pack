@@ -13,7 +13,8 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 	path X;
 	point p;
 	double x,y;
-
+	bool valid;
+	
 	cout << "Current packing has " << P.v.size() << " circles. \n";
 	cout << "Enter command ([h] for help):";
 	cin >> c;
@@ -30,6 +31,7 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 			cout << "[a] to amalgamate neighbors of specified vertex \n";
 			cout << "[f] to find closest center to specified point \n";
 			cout << "[b] to take a branched cover (warning: buggy!) \n";
+			cout << "[v] to validate a packing as a legitimate fatgraph \n";
 			cout << "[q] to quit to graphics display \n";
 			break;
 		case 'r':
@@ -47,6 +49,14 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 			write_packing(packing_output_file,P);
 			packing_output_file.close();
 			cout << "wrote packing to file " << s << "\n";
+			break;
+		case 'v':
+			valid=valid_packing(P);
+			if(valid==true){
+				cout << "valid packing.\n";
+			} else {
+				cout << "invalid packing - proceed at your own risk! \n";
+			};
 			break;
 		case 's':
 			P=subdivide(P);
@@ -124,7 +134,7 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 			B.b.clear();
 			B.v.clear();
 			for(i=0;i<brpts;i++){
-				cout << "enter branch vertex " << i << ":";
+				cout << "enter branch vertex (not 0) " << i << ":";
 				cin >> k;
 				B.v.push_back(k);
 				cout << "enter permutation " << i << ":";
@@ -138,7 +148,7 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 			cout << "branching.\n";
 			P=branched_cover(P,B,C);
 			write_packing(P);
-			cout << "branched cover determined.\n";
+			cout << "branched cover determined (use [v] to validate).\n";
 			break;
 		case 'q':
 			cout << "quit to graphics display; focus in graphics window and press [q] again to exit.\n";

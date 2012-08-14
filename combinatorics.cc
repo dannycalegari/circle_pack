@@ -53,7 +53,7 @@ int which_index(packing P, int i, int j){	// if j is adjacent to i in P, what is
 	return(m);
 };
 
-void read_packing(ifstream &packing_file, packing &P){
+void read_packing(ifstream &packing_file, packing &P){	// read packing from a file
 	int vertices, valence, i, j, k;
 	adjacency_list L;
 	double d;
@@ -75,7 +75,7 @@ void read_packing(ifstream &packing_file, packing &P){
 	return;
 };
 
-void write_packing(ofstream &packing_file, packing P){
+void write_packing(ofstream &packing_file, packing P){	// write packing to a file
 	int i,j;
 	packing_file << P.v.size() << "\n";
 	for(i=0;i<(int) P.v.size();i++){
@@ -90,7 +90,7 @@ void write_packing(ofstream &packing_file, packing P){
 	};
 };
 
-void write_packing(packing P){
+void write_packing(packing P){	// write packing to cout (should I give this a different name?)
 	int vertices, valence, i, j, k;
 	double d;
 	vertices=P.v.size();
@@ -109,7 +109,38 @@ void write_packing(packing P){
 	return;
 };
 
-struct edge_list{
+bool valid_packing(packing P){	// determines whether P is an honest triangulation
+	int i,j,k,l,m,n,o;
+	int vertices,edges;
+	bool valid;
+	valid=true;		// initialize variable
+	vertices=P.v.size();
+	edges=0;		// initialize variable
+	for(i=0;i<(int) P.v.size();i++){	// for each vertex i
+		edges=edges+P.v[i].a.size();
+		for(j=0;j<(int) P.v[i].a.size();j++){	// for each edge starting at i
+			k=P.v[i].a[j];		// what is the endpoint of that edge?
+			l=which_index(P,k,i);	// does k point to i? in which direction l?
+			if(l==-1){
+				valid=false;
+				cout << "vertex " << i << " is adjacent to " << k << " but " << k <<
+					" is not adjacent to " << i << ".\n";
+			};
+			m=P.v[k].a[(l+1)%P.v[k].a.size()];	
+			n=which_index(P,m,k);
+			o=P.v[m].a[(n+1)%P.v[m].a.size()];
+			if(o!=i){
+				valid=false;
+				cout << "triangle " << i << " -> " << k << " -> " << m << " -> " << o << "\n";
+			};
+		};
+	};
+	edges=edges/2;
+	cout << vertices << " vertices, " << edges << " edges; Euler characteristic is " << vertices - edges/3 << "\n";
+	return(valid);
+};
+
+struct edge_list{	// data structure used by function subdivide
 	vector<int> initial;
 	vector<int> terminal;
 	vector<int> left;
