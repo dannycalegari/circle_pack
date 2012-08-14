@@ -137,7 +137,7 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 			B.b.clear();
 			B.v.clear();
 			for(i=0;i<brpts;i++){
-				cout << "enter branch vertex (not 0) " << i << ":";
+				cout << "enter branch vertex " << i << ":";
 				cin >> k;
 				B.v.push_back(k);
 				cout << "enter permutation " << i << ":";
