@@ -26,6 +26,7 @@ using std::string;
 using std::vector;
 
 #include "combinatorics.cc"		// basic combinatorial data structure of a packing
+#include "potato.cc"			// experimental: for "potato packings"
 #include "trigonometry.cc"		// basic functions on packings
 #include "layout.cc"
 #include "branched_cover.cc"
