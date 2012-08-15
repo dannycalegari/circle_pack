@@ -84,6 +84,7 @@ double ppacking::wedge(int i,int e){	// angle at vertex i between edge e and e+1
 	return(angle_at_C(ijrad+jirad,ikrad+kirad,jkrad+kjrad,geometry));
 };
 
+
 double ppacking::angle(int i){	// angle at vertex i; for correct packing, this should be 2pi
 	int e;
 	double angle;
@@ -93,6 +94,7 @@ double ppacking::angle(int i){	// angle at vertex i; for correct packing, this s
 	};
 	return(angle);
 };
+
 
 double ppacking::fitness(){
 	int i;
@@ -116,11 +118,12 @@ vector<int> ppacking::determine_bad_vertices(double accuracy){
 };
 
 void ppacking::adjust_vertex(int i){
-	double scale;
+	double t;
 	int j;
-	scale=6.28318530717959/angle(i);
+	t=correct_ratio(angle(i),adj[i].size());
+	t=1.0+((t-1.0)*0.5);	// step_size hardcoded as 0.5
 	for(j=0;j<(int) adj[i].size();j++){	// not a great way to adjust, but easy to implement
-		rad[i][j]=rad[i][j]*scale;
+		rad[i][j]=rad[i][j]*t;
 	};
 };
 

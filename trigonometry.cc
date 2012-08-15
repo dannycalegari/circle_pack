@@ -14,7 +14,7 @@ double subtend(double r1, double r2, double r3){
 	} else {
 		phi=acos(((a*a)+(b*b)-(c*c))/(2.0*a*b));	// Euclidean law
 	};
-//	phi=acos((cos(a)*cos(b)-cos(c))/(sin(a)*sin(b)));	// spherical law
+//	phi=acos((cos(a)*cos(b)-cos(c))/(sin(a)*sin(b)));	// Spherical law
 	return(phi);
 };
 
@@ -49,7 +49,6 @@ double angle(packing P, int i){
 	return(theta);
 };
 
-
 double fitness(packing P){
 	double d;
 	d=0.0;
@@ -71,6 +70,7 @@ double correct_ratio(double A, int V){
 	desired=sqrt(1.0/(2.0*(1.0-cos(6.28318530717959/(double) V))))-0.5;
 	return(desired/current);
 };
+
 
 void adjust_angles(packing &P, double step_size){
 	vector<double> r;

@@ -28,6 +28,7 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 			cout << "[c] to center circles \n";
 			cout << "[e] to write .eps output \n";
 			cout << "[s] to subdivide packing \n";
+			cout << "[t] to subdivide packing at specific vertex \n";
 			cout << "[a] to amalgamate neighbors of specified vertex \n";
 			cout << "[f] to find closest center to specified point \n";
 			cout << "[b] to take a branched cover (warning: buggy!) \n";
@@ -60,6 +61,13 @@ void input_routine(packing &P, layout_data &L, center_list &C, bool &finished){
 			break;
 		case 's':
 			P=subdivide(P);
+			cout << "subdivided \n";
+			break;
+		case 't':
+			cout << "local subdivide at which vertex:";
+			cin >> i;
+			P=local_subdivide(P,i);
+			write_packing(P);
 			cout << "subdivided \n";
 			break;
 		case 'a':

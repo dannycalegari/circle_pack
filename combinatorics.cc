@@ -158,6 +158,33 @@ int edge_num(packing P, int i, int j, edge_list E){	// what is the edge from i t
 	return(l);
 };
 
+packing local_subdivide(packing P, int i){	// subdivides packing at vertex i
+	packing Q;
+	adjacency_list L;
+	int j,k,l,m,n,valence,P_size;
+	Q=P;	// initialize;
+	P_size=P.v.size();
+	valence=P.v[i].a.size();
+	for(j=0;j<valence;j++){
+		L.a.clear();
+		k=P.v[i].a[j];
+		l=P.v[i].a[(j+1)%valence];
+		m=P.v[i].a[(j+valence-1)%valence];
+		n=which_index(P,k,i);
+		Q.v[k].a[n]=j+P_size;
+		Q.v[k].a.insert(Q.v[k].a.begin()+n+1, ((j-1+valence)%valence)+P_size);
+		Q.v[i].a[j]=j+P_size;
+		L.a.push_back(i);
+		L.a.push_back(((j-1+valence)%valence)+P_size);
+		L.a.push_back(k);
+		L.a.push_back(l);
+		L.a.push_back(((j+1)%valence)+P_size);
+		Q.v.push_back(L);
+		Q.r.push_back(0.1);
+	};
+	return(Q);
+};
+
 packing subdivide(packing P){	// produces new packing by subdividing each triangle into 4 subtriangles
 	packing Q;
 	edge_list E;
