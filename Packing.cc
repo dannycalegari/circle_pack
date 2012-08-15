@@ -1,9 +1,15 @@
 /*	file Packing.cc 	
 
 	New attempt to write a better class for a packing, and a better algorithm.
+	For the moment, we distinguish the new Packing from the old packing by using a capital
+	initial letter.
+	
 	Function "find_radii" implements the algorithm described in 
-		C. Collins, K. Stephenson "A circle packing algorithm"
+		C. Collins, K. Stephenson "A circle packing algorithm",
 		Comp. Geom. 25 (2003) 233--256
+		
+	To do: write method to lay out inner hyperbolic circles, and then
+	transform to a Euclidean or Spherical packing.
 	
 	*/
 
@@ -15,8 +21,8 @@ class Packing {
 		vector< double > rad;			// list of radii.
 		vector< double > lab;			// list of labels. lab[i]=e^{-2rad[i]} (used for hyperbolic calculations)
 		vector<int>	inner;				// list of vertices not adjacent to 0
-		
 		char geometry;	// can be E for Euclidean, S for Spherical or H for hyperbolic
+	//	vector<int> layout;
 	public:
 		int which_edge(int,int);
 		void determine_inner_vertices();
@@ -27,10 +33,9 @@ class Packing {
 		double interior_fitness();
 		double angle(int);
 		double wedge(int,int);
-		double hyperbolic_wedge(int,int);
+		double hyperbolic_wedge(int,int);	// hyperbolic wedge is computed with labels
 		void hyperbolic_correct_radius(int);
 		void Euclidean_correct_radius(int);
-		double estimate_correct_boundary_radius(int, double);	//	sets correct radius for boundary vertex
 		void find_radii(double);	// adjust until fitness <= accuracy
 		void read_packing(ifstream &);	// read data from file
 };
