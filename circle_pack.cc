@@ -9,7 +9,8 @@
 *									*
 ************************************/
 	
-
+#define PI 3.141592653589793238462643383279
+#define TWOPI PI*2.0
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
@@ -39,14 +40,25 @@ using std::vector;
 
 int main(int argc, char *argv[]){
 
-	packing P,Q;
+	
+	packing p;
 	layout_data L;
 	center_list C;
 	bool finished=false;
+	Packing P;
+	ifstream packing_input_file;
+	
+	if(argc>1){
+		packing_input_file.open(argv[1]);
+		P.read_packing(packing_input_file);
+		packing_input_file.close();
+		P.find_radii(0.000000001);
+	} else {
 	
 	while(finished==false){
-		input_routine(P,L,C,finished);
+		input_routine(p,L,C,finished);
 	};
+	
 	setup_graphics();
 	XFlush(display);
 	usleep(100000);
@@ -56,7 +68,7 @@ int main(int argc, char *argv[]){
 	while(1){
 	
 		erase_field();
-		draw_circles(P,C);
+		draw_circles(p,C);
 	//	usleep(100000);
 		XFlush(display);
 
@@ -74,7 +86,7 @@ int main(int argc, char *argv[]){
         };
 	};
 
-
+	};
 	
 	return 0;
 }

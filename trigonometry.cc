@@ -71,7 +71,6 @@ double correct_ratio(double A, int V){
 	return(desired/current);
 };
 
-
 void adjust_angles(packing &P, double step_size){
 	vector<double> r;
 	double adj;
