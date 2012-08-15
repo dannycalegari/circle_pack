@@ -28,7 +28,7 @@ using std::vector;
 
 #include "combinatorics.cc"		// basic combinatorial data structure of a packing
 #include "trigonometry.cc"		// basic functions on packings
-//#include "packing.cc"			// alternate version of packing
+#include "Packing.cc"			// alternate version of packing
 #include "potato.cc"			// experimental: for "potato packings"
 #include "layout.cc"
 #include "branched_cover.cc"

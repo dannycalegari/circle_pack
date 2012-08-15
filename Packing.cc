@@ -1,14 +1,13 @@
-/*	file potato.cc 	
+/*	file Packing.cc 	
 
-	Definitions of combinatorial data structures associated to a potato packing, and simple
+	Definitions of combinatorial data structures associated to an ordinary packing, and simple
 	functions to produce one packing from another. */
 
 
-class ppacking {
+class Packing {
 		vector< vector<int> > adj;		// list of adjacency lists.
 										// if adj[i][e]=j then edge e from vertex i lands at vertex j
-		vector< vector<double> > rad;	// list of half-radius lists.
-										// rad[i][e]=r is the length from i to the "mid"point of edge e
+		vector< double > rad;			// list of radii.
 		char geometry;	// can be either E for Euclidean or S for Spherical
 	public:
 		int which_edge(int,int);
@@ -19,9 +18,10 @@ class ppacking {
 		vector<int> determine_bad_vertices(double);	// which vertices have bad angles?
 		void adjust_radii(vector<int> &);	// adjust radii at specific vertices
 		void solve_radii(double);		// determine correct placement, up to specified accuracy
+		void read_packing(ifstream &);	// read data from file
 };
 
-int ppacking::which_edge(int i, int j){	// returns e if adj[i][e]=j and returns -1 if there is no e.
+int Packing::which_edge(int i, int j){	// returns e if adj[i][e]=j and returns -1 if there is no e.
 	int e;
 	bool found_yet;
 	found_yet=false;
@@ -37,7 +37,7 @@ int ppacking::which_edge(int i, int j){	// returns e if adj[i][e]=j and returns 
 	return(-1);
 };
 
-/*
+
 double angle_at_C(double a, double b, double c, char geometry){	
 	// in a triangle with side lengths a,b,c, what is the angle at C (i.e. opposite c)?
 	double t,u;
@@ -69,27 +69,18 @@ double angle_at_C(double a, double b, double c, char geometry){
 			};
 		};
 	};
+	return(0.0);
 };
 
-*/
-
-double ppacking::wedge(int i,int e){	// angle at vertex i between edge e and e+1
+double Packing::wedge(int i,int e){	// angle at vertex i between edge e and e+1
 	int j,k;	// i -e-> j, i -(e+1)-> k
-	double ijrad,jirad,ikrad,kirad,jkrad,kjrad;
 	j=adj[i][e];
 	k=adj[i][(e+1)%adj[i].size()];	
-	ijrad=rad[i][e];
-	ikrad=rad[i][(e+1)%adj[i].size()];
-	jirad=rad[j][which_edge(j,i)];
-	jkrad=rad[j][which_edge(j,k)];
-	kjrad=rad[k][which_edge(k,j)];
-	kirad=rad[k][which_edge(k,i)];
-	
-	return(angle_at_C(ijrad+jirad,ikrad+kirad,jkrad+kjrad,geometry));
+	return(angle_at_C(rad[i]+rad[j],rad[i]+rad[k],rad[j]+rad[k],geometry));
 };
 
 
-double ppacking::angle(int i){	// angle at vertex i; for correct packing, this should be 2pi
+double Packing::angle(int i){	// angle at vertex i; for correct packing, this should be 2pi
 	int e;
 	double angle;
 	angle=0.0;	// initialize
@@ -100,7 +91,7 @@ double ppacking::angle(int i){	// angle at vertex i; for correct packing, this s
 };
 
 
-double ppacking::fitness(){
+double Packing::fitness(){
 	int i;
 	double fitness;
 	fitness=0.0;
@@ -110,7 +101,7 @@ double ppacking::fitness(){
 	return(fitness);
 };
 
-vector<int> ppacking::determine_bad_vertices(double accuracy){
+vector<int> Packing::determine_bad_vertices(double accuracy){
 	int i;
 	vector<int> L;
 	for(i=0;i<(int) adj.size();i++){
@@ -121,17 +112,23 @@ vector<int> ppacking::determine_bad_vertices(double accuracy){
 	return(L);
 };
 
-void ppacking::adjust_vertex(int i){
+/* copy of function "correct_ratio" from trigonometry.cc
+double correct_ratio(double A, int V){
+	double current, desired;
+	current=sqrt(1.0/(2.0*(1.0-cos(A/(double) V))))-0.5;
+	desired=sqrt(1.0/(2.0*(1.0-cos(6.28318530717959/(double) V))))-0.5;
+	return(desired/current);
+};
+*/
+
+void Packing::adjust_vertex(int i){
 	double t;
-	int j;
 	t=correct_ratio(angle(i),adj[i].size());
 	t=1.0+((t-1.0)*0.5);	// step_size hardcoded as 0.5
-	for(j=0;j<(int) adj[i].size();j++){	// not a great way to adjust, but easy to implement
-		rad[i][j]=rad[i][j]*t;
-	};
+	rad[i]=rad[i]*t;
 };
 
-void ppacking::adjust_radii(vector<int> &L){		// adjust radii at specific list of vertices, and modify list
+void Packing::adjust_radii(vector<int> &L){		// adjust radii at specific list of vertices, and modify list
 	int j,k;
 	int initial_list_size;
 	initial_list_size=L.size();
@@ -147,7 +144,7 @@ void ppacking::adjust_radii(vector<int> &L){		// adjust radii at specific list o
 	L.erase( unique( L.begin(), L.end() ), L.end() );
 };
 
-void ppacking::solve_radii(double accuracy){	// adjust until fitness <= accuracy
+void Packing::solve_radii(double accuracy){	// adjust until fitness <= accuracy
 	vector<int> bad_list;
 	double current_fitness;
 	int i;
@@ -157,4 +154,26 @@ void ppacking::solve_radii(double accuracy){	// adjust until fitness <= accuracy
 			adjust_radii(bad_list);	// bad list is locally added to
 		};
 	};
+};
+
+void Packing::read_packing(ifstream &packing_file){	// read packing from a file
+	int vertices, valence, i, j, k;
+	vector<int> L;	// adjacency_list
+	double d;
+	
+	packing_file >> vertices;
+	for(i=0;i<vertices;i++){
+		packing_file >> valence;
+		for(j=0;j<valence;j++){
+			packing_file >> k;
+			L.push_back(k);
+		};
+		adj.push_back(L);
+		L.clear();
+	};
+	for(i=0;i<vertices;i++){
+		packing_file >> d;
+		rad.push_back(d);
+	};
+	return;
 };
