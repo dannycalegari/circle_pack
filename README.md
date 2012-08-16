@@ -12,4 +12,4 @@ implements simple circle packing (works OK for ~1000 circles; accurate, but
 not super fast). Rational map stuff to come.
 
 The program can currently be used to produce pretty pictures like this one:
-![degree 3 cover](./fbd3.jpg)
+![degree 3 cover](fbd3.jpg)
