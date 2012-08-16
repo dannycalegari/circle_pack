@@ -29,8 +29,13 @@ using std::vector;
 
 #include "combinatorics.cc"		// basic combinatorial data structure of a packing
 #include "trigonometry.cc"		// basic functions on packings
+
+#include "Trigonometry_routine.cc"	// alternate version of trigonometry
 #include "Packing.cc"			// alternate version of packing
+#include "Layout_routine.cc"	// alternate version of layout
+
 #include "potato.cc"			// experimental: for "potato packings"
+
 #include "layout.cc"
 #include "branched_cover.cc"
 #include "graphics.cc"
@@ -53,6 +58,10 @@ int main(int argc, char *argv[]){
 		P.read_packing(packing_input_file);
 		packing_input_file.close();
 		P.find_radii(0.000000001);
+		P.write_radii();
+		P.determine_layout();
+		P.determine_centers();
+		P.write_centers();
 	} else {
 	
 	while(finished==false){
@@ -66,12 +75,9 @@ int main(int argc, char *argv[]){
 
 	
 	while(1){
-	
 		erase_field();
 		draw_circles(p,C);
-	//	usleep(100000);
 		XFlush(display);
-
 
 		XNextEvent(display, &report);
     		switch (report.type) {

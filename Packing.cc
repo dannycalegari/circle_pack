@@ -21,23 +21,40 @@ class Packing {
 		vector< double > rad;			// list of radii.
 		vector< double > lab;			// list of labels. lab[i]=e^{-2rad[i]} (used for hyperbolic calculations)
 		vector<int>	inner;				// list of vertices not adjacent to 0
-		char geometry;	// can be E for Euclidean, S for Spherical or H for hyperbolic
-	//	vector<int> layout;
+		char geometry;					// can be E for Euclidean, S for Spherical or H for hyperbolic
+		vector< vector<int> > lay;		// layout data
+		vector<int> dist;				// combinatorial distances to vertex 0
+		int maximum_distance;			// distance of furthest vertex from vertex 0
+		vector<Point> center;			// center list
+		bool verbose;					// gives lots of information
 	public:
-		int which_edge(int,int);
-		void determine_inner_vertices();
-		void determine_labels();	// work with labels
-		void determine_radii();
-		void rescale();
-		double fitness();
-		double interior_fitness();
-		double angle(int);
-		double wedge(int,int);
+		int which_edge(int,int);		// which edge points from one vertex to the next?
+		
+		// functions to determine radii
+		void determine_inner_vertices();	// determines inner list
+		void determine_labels();		// computes labels from radii (hyperbolic)
+		void determine_radii();			// computes radii of inner circles from labels (hyperbolic)
+		double fitness();				// Sum_i |angle(i)-2pi|
+		double interior_fitness();		// Sum_{i interior} |angle(i)-2pi|
+		double angle(int);				// angle at vertex i
+		double wedge(int,int);			// angle at vertex i from edge e to edge e+1
 		double hyperbolic_wedge(int,int);	// hyperbolic wedge is computed with labels
-		void hyperbolic_correct_radius(int);
-		void Euclidean_correct_radius(int);
-		void find_radii(double);	// adjust until fitness <= accuracy
-		void read_packing(ifstream &);	// read data from file
+		void hyperbolic_correct_radius(int);	// adjust radius at i to new radius (hyperbolic)
+		void Euclidean_correct_radius(int);		// adjust radius at i to new radius (Euclidean)
+		void find_radii(double);			// adjust until fitness <= accuracy
+		void write_radii();					// write radii
+		
+		// functions to read and write data
+		void read_packing(ifstream &);		// read data from file
+		
+		// functions to layout packing and compute centers
+		void compute_distances_to_vertex_0();	// compute combinatorial distances to vertex 0
+		void write_distances_to_vertex_0();		// write distances to vertex 0
+		bool already_laid_out(int);			// has this vertex been laid out yet?
+		void determine_layout();			// figure out layout order of vertices 
+		void initialize_centers();			// set all centers to (0,0,1) which is 0 in every geometry
+		void determine_centers();			// figure out centers of vertices
+		void write_centers();				// write centers
 };
 
 int Packing::which_edge(int i, int j){	// returns e if adj[i][e]=j and returns -1 if there is no e.
@@ -78,19 +95,13 @@ void Packing::determine_labels(){
 };
 
 void Packing::determine_radii(){
-	int i,j;
-	for(i=0;i<(int) inner.size();i++){
-		j=inner[i];
-		rad[j]=-log(lab[j])/2.0;
-	};
-};
-
-void Packing::rescale(){	// rescales radii so outer circle has radius -2.0
-	double R;
 	int i;
-	R=-2.0/rad[0];
-	for(i=0;i<(int) rad.size();i++){
-		rad[i]=rad[i]*R;
+//  int j;
+	for(i=1;i<(int) adj.size();i++){
+//	for(i=0;i<(int) inner.size();i++){
+//		j=inner[i];
+//		rad[j]=-log(lab[j])/2.0;
+		rad[i]=-log(lab[i])/2.0;
 	};
 };
 
@@ -210,11 +221,18 @@ void Packing::Euclidean_correct_radius(int j){
 void Packing::find_radii(double accuracy){	// adjust until fitness <= accuracy
 	int i,j,step;
 	step=0;
+	if(verbose){
+		cout << "determining radii to accuracy " << accuracy << ".\n";
+	};
 	if(geometry=='H'){
-		cout << "Hyperbolic geometry.\n";
+		if(verbose){
+			cout << "hyperbolic geometry.\n";
+		};
 		determine_inner_vertices();
 		determine_labels();
-		cout << "initial fitness is " << interior_fitness() << "\n";
+		if(verbose){
+			cout << "initial fitness is " << interior_fitness() << "\n";
+		};
 		while(interior_fitness()>accuracy){
 			for(i=0;i<(int) inner.size();i++){
 				j=inner[i];
@@ -230,12 +248,14 @@ void Packing::find_radii(double accuracy){	// adjust until fitness <= accuracy
 		//		cout << "new label " << j << " is " << lab[j] << "\n";
 			};
 			step++;
-			if(step%100==0){
-				cout << "fitness is " << interior_fitness() << " after " << step << " steps. \n";
+			if(verbose){
+				if(step%100==0){
+					cout << "fitness is " << interior_fitness() << " after " << step << " steps. \n";
+				};
 			};
-		//	usleep(1000000);
 		};
 		cout << "fitness is " << interior_fitness() << " after " << step << " steps. \n";
+		determine_radii();	// convert from labels to radii
 	} else if (geometry=='E'){
 		cout << "Euclidean geometry.\n";
 		cout << "initial fitness is " << fitness() << "\n";
@@ -251,6 +271,20 @@ void Packing::find_radii(double accuracy){	// adjust until fitness <= accuracy
 		cout << "fitness is " << fitness() << " after " << step << " steps. \n";
 	} else {
 		cout << "Spherical packing not implemented yet (move a vertex to infinity)\n";
+	};
+};
+
+void Packing::write_radii(){
+	int i;
+	if(geometry=='H'){
+		cout << "circle " << 0 << " is the ideal circle \n";
+		for(i=1;i<(int) adj.size();i++){
+			cout << "circle " << i << " has radius " << rad[i] << "\n";
+		};
+	} else {
+		for(i=0;i<(int) adj.size();i++){
+			cout << "circle " << i << " has radius " << rad[i] << "\n";
+		};	
 	};
 };
 
@@ -275,5 +309,6 @@ void Packing::read_packing(ifstream &packing_file){	// read packing from a file
 	};
 //	rescale();
 	geometry='H';
+	verbose=true;
 	return;
 };
