@@ -157,6 +157,59 @@ Matrix ROT(double angle){	// rotation in xy-plane about origin
 	return(M);
 };
 
+Matrix XZ_ROT(double angle){	// rotation in xz-plane
+	// returns matrix C=cos(angle), S=sin(angle)
+	// (C  0 -S)
+	// (0  1  0)
+	// (S  0  C)
+	Matrix M;
+	M.e.clear();
+	vector<double> row;
+	row.clear();
+	row.push_back(cos(angle));
+	row.push_back(0.0);
+	row.push_back(-sin(angle));
+	M.e.push_back(row);
+	row.clear();
+	row.push_back(0.0);
+	row.push_back(1.0);
+	row.push_back(0.0);
+	M.e.push_back(row);
+	row.clear();
+	row.push_back(sin(angle));
+	row.push_back(0.0);
+	row.push_back(cos(angle));
+	M.e.push_back(row);
+	return(M);
+};
+
+Matrix YZ_ROT(double angle){	// rotation in xz-plane
+	// returns matrix C=cos(angle), S=sin(angle)
+	// (1  0  0)
+	// (0  C -S)
+	// (0  S  C)
+	Matrix M;
+	M.e.clear();
+	vector<double> row;
+	row.clear();
+	row.push_back(1.0);
+	row.push_back(0.0);
+	row.push_back(0.0);
+	M.e.push_back(row);
+	row.clear();
+	row.push_back(0.0);
+	row.push_back(cos(angle));
+	row.push_back(-sin(angle));
+	M.e.push_back(row);
+	row.clear();
+	row.push_back(0.0);
+	row.push_back(sin(angle));
+	row.push_back(cos(angle));
+	M.e.push_back(row);
+	return(M);
+};
+	
+	
 Matrix HTR(double dist){	// translation in hyperbolic plane along x axis
 	// returns matrix c=cosh(dist), s=sinh(dist)
 	// (c  0  s)
@@ -207,6 +260,8 @@ Matrix ETR(double dist){	//  translation in Euclidean plane along x axis
 	return(M);
 };
 
+
+
 double hyp_dist(Point P){	// hyperbolic distance from origin
 	if(P.z<1.0){
 		return(0.0);
@@ -214,7 +269,7 @@ double hyp_dist(Point P){	// hyperbolic distance from origin
 	return(acosh(P.z));
 };
 
-double ang(Point P){	// hyperbolic angle from origin
+double hyp_ang(Point P){	// hyperbolic angle from origin
 	double d;
 	d=hyp_dist(P);
 	if(d==0.0){
@@ -231,6 +286,17 @@ double sph_dist(Point P, Point Q){	// spherical angle=distance between two point
 	return(acos(dot(P,Q)));
 };
 
+double sph_dist(Point P){	// spherical angle=distance from the origin
+	return(acos(P.z));
+};
+
+double sph_ang(Point P){
+	if(P.z>=1.0){
+		return(0.0);
+	};
+	return(atan2(P.y,P.x));
+};
+
 double Euc_dist(Point P, Point Q){	// Euclidean distance between two points *assumed to have z coord = 1*
 	return(sqrt((P.x-Q.x)*(P.x-Q.x)+(P.y-Q.y)*(P.y-Q.y)));
 };
@@ -245,9 +311,10 @@ Point hyperboloid_to_Poincare(Point P){	// change coordinates from hyperboloid t
 };
 
 Point hyperboloid_to_sphere(Point P){
-	Point Q;
-	Q.x=P.x/norm(P);
-	Q.y=P.y/norm(P);
-	Q.z=P.z/norm(P);
-	return(Q);
+	Point Q,R;
+	Q=hyperboloid_to_Poincare(P);
+	R.x=2.0*Q.x/(1.0+Q.x*Q.x+Q.y*Q.y);
+	R.y=2.0*Q.y/(1.0+Q.x*Q.x+Q.y*Q.y);
+	R.z=(-1.0+Q.x*Q.x+Q.y*Q.y)/(1.0+Q.x*Q.x+Q.y*Q.y);
+	return(R);
 };

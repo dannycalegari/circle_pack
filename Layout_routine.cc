@@ -133,9 +133,9 @@ Point layout_point(double RI, Point J, double RJ, Point K, double RK, char geome
 	K0=HTR(a)(J0);
 	I0=(ROT(angle)*HTR(b))(J0);	// (J0,K0,I0) have correct relative position. 
 		// need to compute M in SO(2,1) with M(J0,K0,I0) = (J,K,I);
-	M=HTR(-hyp_dist(J))*ROT(-ang(J));	// M moves J to origin
+	M=HTR(-hyp_dist(J))*ROT(-hyp_ang(J));	// M moves J to origin
 	K1=M(K);
-	M=ROT(-ang(K1))*M;
+	M=ROT(-hyp_ang(K1))*M;
 	I=M.hyp_inv()(I0);	// apply inverse of M to I0
 	return(I);
 };
@@ -210,7 +210,7 @@ void Packing::change_geometry(char new_geometry){
 		for(i=1;i<(int) adj.size();i++){	// for each point
 			Pcent=center[i];	// hyperbolic center
 			d=hyp_dist(Pcent);		// hyperbolic distance to 0
-			theta=ang(Pcent);	// hyperbolic angle from 0
+			theta=hyp_ang(Pcent);	// hyperbolic angle from 0
 			R=rad[i];		// hyperbolic radius
 			Pin=(ROT(theta)*HTR(d-R))(ORIGIN);
 			Pin=hyperboloid_to_Poincare(Pin);
@@ -224,10 +224,11 @@ void Packing::change_geometry(char new_geometry){
 		};
 		geometry='E';
 	} else if(new_geometry=='S' && geometry=='H'){
+		rad[0]=PI/2.0;
 		for(i=1;i<(int) adj.size();i++){	// for each point
 			Pcent=center[i];	// hyperbolic center
 			d=hyp_dist(Pcent);		// hyperbolic distance to 0
-			theta=ang(Pcent);	// hyperbolic angle from 0
+			theta=hyp_ang(Pcent);	// hyperbolic angle from 0
 			R=rad[i];		// hyperbolic radius
 			Pin=(ROT(theta)*HTR(d-R))(ORIGIN);
 			Pin=hyperboloid_to_sphere(Pin);
@@ -239,6 +240,6 @@ void Packing::change_geometry(char new_geometry){
 			center[i]=Pcent;	// Spherical center
 			rad[i]=R;			// Spherical radius
 		};
-		geometry='E';	
+		geometry='S';	
 	};	
 };

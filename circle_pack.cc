@@ -63,9 +63,9 @@ int main(int argc, char *argv[]){
 		P.determine_layout();
 		P.determine_centers();
 //		P.write_centers();
-		P.change_geometry('E');
-//		P.write_radii();
-//		P.write_centers();
+		P.change_geometry('S');
+		P.write_radii();
+		P.write_centers();
 		
 		setup_graphics();
 		XFlush(display);

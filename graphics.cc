@@ -73,6 +73,37 @@ void draw_circle(int x, int y, int r, double col){
         XDrawArc(display, win, gc, x-r, 600-y-r, 2*r, 2*r, 0, 23040);
 };
 
+void draw_3d_circle(Point P, double R){
+	double t;
+	double theta,r;
+	Matrix M;
+	Point Q;
+	int x1,y1,x2,y2;
+    XSetForeground(display, gc, (long) 0.0);
+    XSetLineAttributes(display, gc, 3, LineSolid, 1, 1);
+    theta=sph_ang(P);
+    r=acos(P.z);
+    M=ROT(theta)*XZ_ROT(-r);
+    Q.x=0.0;
+    Q.y=0.0;
+    Q.z=1.0;
+  //  write_Point(M(Q));
+	// write_Point(P);
+    for(t=0.0;t<TWOPI;t=t+0.01){
+    	Q.x=sin(R)*cos(t);
+    	Q.y=sin(R)*sin(t);
+    	Q.z=cos(R);
+    	Q=M(Q);
+    	x2=x1;
+    	y2=y1;
+    	x1=(int) (300.0+Q.x*200.0);
+    	y1=(int) (300.0+Q.y*200.0);
+    	if(t!=0.0){
+    		draw_line(x1,y1,x2,y2);
+    	};
+    };
+};
+
 void draw_circles(packing P, center_list C){
 	if(C.p.size()==P.v.size() && P.v.size()>0){
 	int i,j;
@@ -105,5 +136,9 @@ void Packing::draw_circles(){
 			draw_circle(X,Y,R,(double) i/(double) SIZE);
 		};
 	} else if(geometry=='S'){
+		int i;
+		for(i=0;i<SIZE;i++){
+			draw_3d_circle(center[i],rad[i]);
+		};
 	};
 };
