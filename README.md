@@ -9,5 +9,7 @@ precomposition with a Mobius transformation).
 One approach is to get an initial estimate via circle packing, and then to
 use Newton's method to adjust the coefficients. At the moment, this program
 implements simple circle packing (works OK for ~1000 circles; accurate, but
-not super fast). Taking (combinatorial) branched covers is implemented,
-but buggy. 
+not super fast). Rational map stuff to come.
+
+The program can currently be used to produce pretty pictures like this one:
+![degree 3 cover](./fbd3.jpg)
