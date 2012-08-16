@@ -28,9 +28,18 @@ class Packing {
 		vector<Point> center;			// center list
 		bool verbose;					// gives lots of information
 	public:
+		// administrative functions
 		int which_edge(int,int);		// which edge points from one vertex to the next?
-		void set_verbose(bool B){		// set verbose flag
-			verbose=B;
+		void toggle_verbose(){			// toggle verbose flag
+			if(verbose==true){
+				verbose=false;
+			} else {
+				verbose=true;
+			};
+			cout << "verbose is " << verbose << ".\n";
+		};
+		int size(){
+			return((int) adj.size());
 		};
 		
 		// functions to determine radii
@@ -49,7 +58,9 @@ class Packing {
 		
 		// functions to read and write data
 		void read_packing(ifstream &);		// read data from file
-		
+		void write_packing(ofstream &);		// write data to file
+		void write_packing_eps(ofstream &);		// write data to .eps file
+
 		// functions to layout packing and compute centers
 		void compute_distances_to_vertex_0();	// compute combinatorial distances to vertex 0
 		void write_distances_to_vertex_0();		// write distances to vertex 0
@@ -60,7 +71,7 @@ class Packing {
 		void write_centers();				// write centers
 		void change_geometry(char);			// determines new radii/centers
 		
-		//
+		// graphic functions
 		void draw_circles();				// graphic routine
 };
 
@@ -300,6 +311,7 @@ void Packing::read_packing(ifstream &packing_file){	// read packing from a file
 	int vertices, valence, i, j, k;
 	vector<int> L;	// adjacency_list
 	double d;
+	char c;
 	
 	packing_file >> vertices;
 	for(i=0;i<vertices;i++){
@@ -313,10 +325,19 @@ void Packing::read_packing(ifstream &packing_file){	// read packing from a file
 	};
 	for(i=0;i<vertices;i++){
 		packing_file >> d;
-		rad.push_back(0.1);	// setting all initial radii to 0.1
+		rad.push_back(0.1);	// setting all initial radii to 0.1; should we really do this?
 	};
 	rad[0]=1.0;	// initialize radius 0 to 1.
-//	rescale();
-	geometry='H';
+
+	packing_file >> c;
+	if(c=='H'){
+		geometry='H';
+	} else if(c=='E'){
+		geometry='E';
+	} else if(c=='S'){
+		geometry='S';
+	} else {
+		geometry='H';
+	};
 	return;
 };

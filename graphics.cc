@@ -104,25 +104,6 @@ void draw_3d_circle(Point P, double R){
     };
 };
 
-void draw_circles(packing P, center_list C){
-	if(C.p.size()==P.v.size() && P.v.size()>0){
-	int i,j;
-	int X,Y,R;
-	i=C.p.size();
-	for(j=0;j<(int) P.v.size();j++){
-		X=(int) (300.0+C.p[j].x*100.0);
-		Y=(int) (300.0+C.p[j].y*100.0);
-		R=(int) (P.r[j]*100.0);
-		if(R<0){
-			R=-R;
-		};
-	//	cout << X << " " << Y << " " << R << "\n";
-
-		draw_circle(X,Y,R,(double) j/(double) i);
-	};
-	};
-};
-
 void Packing::draw_circles(){
 	int X,Y,R;
 	int SIZE;
