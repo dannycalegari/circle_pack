@@ -62,6 +62,31 @@ int main(int argc, char *argv[]){
 		P.determine_layout();
 		P.determine_centers();
 		P.write_centers();
+		P.change_geometry('E');
+		P.write_radii();
+		P.write_centers();
+		
+		setup_graphics();
+		XFlush(display);
+		usleep(100000);
+		XSetInputFocus(display, win, RevertToNone, CurrentTime);
+		while(1){
+			erase_field();
+			P.draw_circles();
+			XFlush(display);
+			
+			XNextEvent(display, &report);
+    			switch (report.type) {
+           			case KeyPress:
+  						if(XLookupKeysym(&report.xkey, 0) == XK_q){
+                        	XCloseDisplay(display);
+                        	exit(0);
+                    		break;
+                		};
+            			default:
+                			break;
+        	};
+		};
 	} else {
 	
 	while(finished==false){

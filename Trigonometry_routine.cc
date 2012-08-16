@@ -3,14 +3,18 @@
 
 struct Point {
 	double x,y,z;	
-	// convention: 
-	// in Euclidean geometry, z=1
-	// in spherical geometry, x^2+y^2+z^2=1
-	// in hyperbolic geometry, x^2+y^2-z^2=-1
 };
 
 void write_Point(Point P){
 	cout << P.x << " " << P.y << " " << P.z << "\n";
+};
+
+Point midpoint(Point P, Point Q){
+	Point R;
+	R.x=(P.x+Q.x)/2.0;
+	R.y=(P.y+Q.y)/2.0;
+	R.z=(P.z+Q.z)/2.0;
+	return(R);
 };
 
 class Matrix {
@@ -77,19 +81,19 @@ void write_Matrix(Matrix M){
 
 Matrix ROT(double angle){	// rotation in xy-plane about origin
 	// returns matrix C=cos(angle), S=sin(angle)
-	// (C  S  0)
-	// (-S C  0)
+	// (C -S  0)
+	// (S  C  0)
 	// (0  0  1)
 	Matrix M;
 	M.e.clear();
 	vector<double> row;
 	row.clear();
 	row.push_back(cos(angle));
-	row.push_back(sin(angle));
+	row.push_back(-sin(angle));
 	row.push_back(0.0);
 	M.e.push_back(row);
 	row.clear();
-	row.push_back(-sin(angle));
+	row.push_back(sin(angle));
 	row.push_back(cos(angle));
 	row.push_back(0.0);
 	M.e.push_back(row);
@@ -126,7 +130,7 @@ Matrix HTR(double dist){	// translation in hyperbolic plane along x axis
 	return(M);
 };
 
-double dist(Point P){	// hyperbolic distance from origin
+double hyp_dist(Point P){	// hyperbolic distance from origin
 	if(P.z<1.0){
 		return(0.0);
 	};
@@ -135,9 +139,18 @@ double dist(Point P){	// hyperbolic distance from origin
 
 double ang(Point P){	// hyperbolic angle from origin
 	double d;
-	d=dist(P);
+	d=hyp_dist(P);
 	if(d==0.0){
 		return(0.0);
 	};
-	return(atan2(P.x/sinh(d),P.y/sinh(d)));
+	return(atan2(P.y,P.x));
+};
+
+Point hyperboloid_to_Poincare(Point P){	// change coordinates from hyperboloid to Poincare model
+	// this can be used to change geometry from hyperbolic to Euclidean
+	Point Q;
+	Q.x=P.x/(P.z+1.0);
+	Q.y=P.y/(P.z+1.0);
+	Q.z=1.0;
+	return(Q);
 };

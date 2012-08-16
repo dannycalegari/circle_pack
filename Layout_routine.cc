@@ -119,7 +119,7 @@ void Packing::determine_layout(){			// figure out layout order of vertices
 Point layout_point(double RI, Point J, double RJ, Point K, double RK, char geometry){
 	// triangle JKI; i.e. JK is bottom edge. 
 	// given location of J and K, and side lengths (implicitly), compute location of I
-	Point I;
+	Point I,I1;
 	Point J0,K0,I0,K1;
 	Matrix M;
 	double a,b,c,angle;
@@ -133,10 +133,10 @@ Point layout_point(double RI, Point J, double RJ, Point K, double RK, char geome
 	K0=HTR(a)(J0);
 	I0=(ROT(angle)*HTR(b))(J0);	// (J0,K0,I0) have correct relative position. 
 		// need to compute M in SO(2,1) with M(J0,K0,I0) = (J,K,I);
-	M=HTR(-dist(J))*ROT(-ang(J));	// M moves J to origin
+	M=HTR(-hyp_dist(J))*ROT(-ang(J));	// M moves J to origin
 	K1=M(K);
 	M=ROT(-ang(K1))*M;
-	I=M.hyp_inv()(I0);	// apply inverse of M to I
+	I=M.hyp_inv()(I0);	// apply inverse of M to I0
 	return(I);
 };
 
@@ -156,7 +156,7 @@ void Packing::initialize_centers(){
 
 void Packing::determine_centers(){			// figure out centers of vertices
 	Point P;
-	int i,j,k;
+	int i,j,k,l;
 	double d;
 	initialize_centers();
 	if(verbose){
@@ -170,21 +170,57 @@ void Packing::determine_centers(){			// figure out centers of vertices
 	P.x=0.0;
 	P.y=0.0;
 	P.z=1.0;
+	// P=ORIGIN;
 	center[i]=P;
+//	cout << "center " << 0 << " index " << i << " laid out at " << P.x << " " << P.y << " " << P.z << "\n";
 	d=rad[i]+rad[j];
 	P=HTR(d)(P);
 	center[j]=P;
-	for(i=2;i<(int) lay.size();i++){
-		k=lay[i][1];
-		j=lay[i][2];
+//	cout << "center " << 1 << " index " << j << " laid out at " << P.x << " " << P.y << " " << P.z << "\n";
+	for(l=2;l<(int) lay.size();l++){
+		i=lay[l][0];
+		k=lay[l][1];
+		j=lay[l][2];
 		P=layout_point(rad[i], center[j], rad[j], center[k], rad[k], geometry);
 		center[i]=P;
+//		cout << "center " << l << " index " << i << " laid out on " << j << " and " << k << " at " << P.x << " " << P.y << " " << P.z << "\n";
 	};
 };
 
 void Packing::write_centers(){
+	cout << "geometry is " << geometry << "\n";
 	int i;
 	for(i=0;i<(int) adj.size();i++){
 		cout << "vertex " << i << " has center " << center[i].x << " " << center[i].y << " " << center[i].z << "\n";
+	};
+};
+
+void Packing::change_geometry(char new_geometry){
+	Point Pcent,Pin,Pout,ORIGIN;
+	double d,theta;
+	double R;
+	int i;
+	if(verbose){
+		cout << "changing geometry from " << geometry << " to " << new_geometry << "\n";
+	};
+	ORIGIN.x=0.0;
+	ORIGIN.y=0.0;
+	ORIGIN.z=1.0;
+	if(new_geometry=='E'){
+		for(i=1;i<(int) adj.size();i++){	// for each point
+			Pcent=center[i];	// hyperbolic center
+			d=hyp_dist(Pcent);		// hyperbolic distance to 0
+			theta=ang(Pcent);	// hyperbolic angle from 0
+			R=rad[i];		// hyperbolic radius
+			Pin=(ROT(theta)*HTR(d-R))(ORIGIN);
+			Pin=hyperboloid_to_Poincare(Pin);
+			Pout=(ROT(theta)*HTR(d+R))(ORIGIN);
+			Pout=hyperboloid_to_Poincare(Pout);
+			Pcent=midpoint(Pin,Pout);
+			R=sqrt((Pin.x-Pout.x)*(Pin.x-Pout.x)+(Pin.y-Pout.y)*(Pin.y-Pout.y))/2.0;
+			center[i]=Pcent;	// Euclidean center
+			rad[i]=R;			// Euclidean radius
+		};
+		geometry='E';
 	};
 };

@@ -55,6 +55,10 @@ class Packing {
 		void initialize_centers();			// set all centers to (0,0,1) which is 0 in every geometry
 		void determine_centers();			// figure out centers of vertices
 		void write_centers();				// write centers
+		void change_geometry(char);			// determines new radii/centers
+		
+		//
+		void draw_circles();				// graphic routine
 };
 
 int Packing::which_edge(int i, int j){	// returns e if adj[i][e]=j and returns -1 if there is no e.
@@ -275,6 +279,7 @@ void Packing::find_radii(double accuracy){	// adjust until fitness <= accuracy
 };
 
 void Packing::write_radii(){
+	cout << "geometry is " << geometry << "\n";
 	int i;
 	if(geometry=='H'){
 		cout << "circle " << 0 << " is the ideal circle \n";
@@ -307,6 +312,7 @@ void Packing::read_packing(ifstream &packing_file){	// read packing from a file
 		packing_file >> d;
 		rad.push_back(0.1);	// setting all initial radii to 0.1
 	};
+	rad[0]=1.0;	// initialize radius 0 to 1.
 //	rescale();
 	geometry='H';
 	verbose=true;
