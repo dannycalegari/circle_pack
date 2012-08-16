@@ -119,7 +119,7 @@ void Packing::determine_layout(){			// figure out layout order of vertices
 Point layout_point(double RI, Point J, double RJ, Point K, double RK, char geometry){
 	// triangle JKI; i.e. JK is bottom edge. 
 	// given location of J and K, and side lengths (implicitly), compute location of I
-	Point I,I1;
+	Point I;
 	Point J0,K0,I0,K1;
 	Matrix M;
 	double a,b,c,angle;
@@ -206,7 +206,7 @@ void Packing::change_geometry(char new_geometry){
 	ORIGIN.x=0.0;
 	ORIGIN.y=0.0;
 	ORIGIN.z=1.0;
-	if(new_geometry=='E'){
+	if(new_geometry=='E' && geometry=='H'){
 		for(i=1;i<(int) adj.size();i++){	// for each point
 			Pcent=center[i];	// hyperbolic center
 			d=hyp_dist(Pcent);		// hyperbolic distance to 0
@@ -217,10 +217,28 @@ void Packing::change_geometry(char new_geometry){
 			Pout=(ROT(theta)*HTR(d+R))(ORIGIN);
 			Pout=hyperboloid_to_Poincare(Pout);
 			Pcent=midpoint(Pin,Pout);
-			R=sqrt((Pin.x-Pout.x)*(Pin.x-Pout.x)+(Pin.y-Pout.y)*(Pin.y-Pout.y))/2.0;
+			R=Euc_dist(Pin,Pout)/2.0;
+//				sqrt((Pin.x-Pout.x)*(Pin.x-Pout.x)+(Pin.y-Pout.y)*(Pin.y-Pout.y))/2.0;
 			center[i]=Pcent;	// Euclidean center
 			rad[i]=R;			// Euclidean radius
 		};
 		geometry='E';
-	};
+	} else if(new_geometry=='S' && geometry=='H'){
+		for(i=1;i<(int) adj.size();i++){	// for each point
+			Pcent=center[i];	// hyperbolic center
+			d=hyp_dist(Pcent);		// hyperbolic distance to 0
+			theta=ang(Pcent);	// hyperbolic angle from 0
+			R=rad[i];		// hyperbolic radius
+			Pin=(ROT(theta)*HTR(d-R))(ORIGIN);
+			Pin=hyperboloid_to_sphere(Pin);
+			Pout=(ROT(theta)*HTR(d+R))(ORIGIN);
+			Pout=hyperboloid_to_sphere(Pout);
+			Pcent=midpoint(Pin,Pout);
+			Pcent=Pcent/norm(Pcent);
+			R=sph_dist(Pin,Pout)/2.0;
+			center[i]=Pcent;	// Spherical center
+			rad[i]=R;			// Spherical radius
+		};
+		geometry='E';	
+	};	
 };

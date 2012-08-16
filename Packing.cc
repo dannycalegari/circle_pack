@@ -29,6 +29,9 @@ class Packing {
 		bool verbose;					// gives lots of information
 	public:
 		int which_edge(int,int);		// which edge points from one vertex to the next?
+		void set_verbose(bool B){		// set verbose flag
+			verbose=B;
+		};
 		
 		// functions to determine radii
 		void determine_inner_vertices();	// determines inner list
@@ -315,6 +318,5 @@ void Packing::read_packing(ifstream &packing_file){	// read packing from a file
 	rad[0]=1.0;	// initialize radius 0 to 1.
 //	rescale();
 	geometry='H';
-	verbose=true;
 	return;
 };

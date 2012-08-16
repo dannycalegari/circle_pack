@@ -96,9 +96,7 @@ void Packing::draw_circles(){
 	int X,Y,R;
 	int SIZE;
 	SIZE=(int) adj.size();
-	if(geometry!='E'){	
-		cout << "only draw Euclidean circles! change geometry first!\n";
-	} else {
+	if(geometry=='E'){	
 		int i;
 		for(i=0;i<SIZE;i++){
 			X=(int) (300.0+center[i].x*200.0);
@@ -106,5 +104,6 @@ void Packing::draw_circles(){
 			R=(int) (rad[i]*200.0);
 			draw_circle(X,Y,R,(double) i/(double) SIZE);
 		};
+	} else if(geometry=='S'){
 	};
 };

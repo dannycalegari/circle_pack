@@ -57,14 +57,15 @@ int main(int argc, char *argv[]){
 		packing_input_file.open(argv[1]);
 		P.read_packing(packing_input_file);
 		packing_input_file.close();
+		P.set_verbose(false);
 		P.find_radii(0.000000001);
-		P.write_radii();
+//		P.write_radii();
 		P.determine_layout();
 		P.determine_centers();
-		P.write_centers();
+//		P.write_centers();
 		P.change_geometry('E');
-		P.write_radii();
-		P.write_centers();
+//		P.write_radii();
+//		P.write_centers();
 		
 		setup_graphics();
 		XFlush(display);

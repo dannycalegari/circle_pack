@@ -17,6 +17,58 @@ Point midpoint(Point P, Point Q){
 	return(R);
 };
 
+double norm(Point P){
+	return(sqrt(P.x*P.x+P.y*P.y+P.z*P.z));
+};
+
+Point operator*(Point P, double d){
+	Point Q;
+	Q.x=P.x*d;
+	Q.y=P.y*d;
+	Q.z=P.z*d;
+	return(Q);
+};
+
+Point operator/(Point P, double d){
+	Point Q;
+	Q.x=P.x/d;
+	Q.y=P.y/d;
+	Q.z=P.z/d;
+	return(Q);
+};
+
+Point operator+(Point P, Point Q){
+	Point R;
+	R.x=P.x+Q.x;
+	R.y=P.y+Q.y;
+	R.z=P.z+Q.z;
+	return(R);
+};
+
+Point operator-(Point P, Point Q){
+	Point R;
+	R.x=P.x-Q.x;
+	R.y=P.y-Q.y;
+	R.z=P.z-Q.z;
+	return(R);
+};
+
+Point cross(Point P, Point Q){
+	Point R;
+	R.z=P.x*Q.y-P.y*Q.x;
+	R.y=P.z*Q.x-P.x*Q.z;
+	R.x=P.y*Q.z-P.z*Q.y;
+	return(R);
+};
+
+double dot(Point P, Point Q){
+	return(P.x*Q.x+P.y*Q.y+P.z*Q.z);
+};
+
+double hdot(Point P, Point Q){
+	return(P.x*Q.x+P.y*Q.y-P.z*Q.z);
+};
+
 class Matrix {
 	public:
 		// do I want entries to be public?
@@ -130,6 +182,31 @@ Matrix HTR(double dist){	// translation in hyperbolic plane along x axis
 	return(M);
 };
 
+Matrix ETR(double dist){	//  translation in Euclidean plane along x axis
+	// returns matrix
+	// (1 0 d)
+	// (0 1 0)
+	// (0 0 1)
+	Matrix M;
+	vector<double> row;
+	row.clear();
+	row.push_back(1.0);
+	row.push_back(0.0);
+	row.push_back(dist);
+	M.e.push_back(row);
+	row.clear();
+	row.push_back(0.0);
+	row.push_back(1.0);
+	row.push_back(0.0);
+	M.e.push_back(row);
+	row.clear();
+	row.push_back(0.0);
+	row.push_back(0.0);
+	row.push_back(1.0);
+	M.e.push_back(row);
+	return(M);
+};
+
 double hyp_dist(Point P){	// hyperbolic distance from origin
 	if(P.z<1.0){
 		return(0.0);
@@ -146,11 +223,31 @@ double ang(Point P){	// hyperbolic angle from origin
 	return(atan2(P.y,P.x));
 };
 
+double hyp_dist(Point P, Point Q){	// hyperbolic distance between two points *assumed to be on hyperboloid*
+	return(acosh(-hdot(P,Q)));
+};
+
+double sph_dist(Point P, Point Q){	// spherical angle=distance between two points *assumed to be on sphere*
+	return(acos(dot(P,Q)));
+};
+
+double Euc_dist(Point P, Point Q){	// Euclidean distance between two points *assumed to have z coord = 1*
+	return(sqrt((P.x-Q.x)*(P.x-Q.x)+(P.y-Q.y)*(P.y-Q.y)));
+};
+
 Point hyperboloid_to_Poincare(Point P){	// change coordinates from hyperboloid to Poincare model
 	// this can be used to change geometry from hyperbolic to Euclidean
 	Point Q;
 	Q.x=P.x/(P.z+1.0);
 	Q.y=P.y/(P.z+1.0);
 	Q.z=1.0;
+	return(Q);
+};
+
+Point hyperboloid_to_sphere(Point P){
+	Point Q;
+	Q.x=P.x/norm(P);
+	Q.y=P.y/norm(P);
+	Q.z=P.z/norm(P);
 	return(Q);
 };
