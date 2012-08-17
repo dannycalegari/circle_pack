@@ -260,7 +260,30 @@ Matrix ETR(double dist){	//  translation in Euclidean plane along x axis
 	return(M);
 };
 
-
+Matrix DIL(double t){	//  dilation by t in Euclidean plane centered at 0
+	// returns matrix
+	// (t 0 0)
+	// (0 t 0)
+	// (0 0 1)
+	Matrix M;
+	vector<double> row;
+	row.clear();
+	row.push_back(t);
+	row.push_back(0.0);
+	row.push_back(0.0);
+	M.e.push_back(row);
+	row.clear();
+	row.push_back(0.0);
+	row.push_back(t);
+	row.push_back(0.0);
+	M.e.push_back(row);
+	row.clear();
+	row.push_back(0.0);
+	row.push_back(0.0);
+	row.push_back(1.0);
+	M.e.push_back(row);
+	return(M);
+};
 
 double hyp_dist(Point P){	// hyperbolic distance from origin
 	if(P.z<1.0){
@@ -269,10 +292,20 @@ double hyp_dist(Point P){	// hyperbolic distance from origin
 	return(acosh(P.z));
 };
 
-double hyp_ang(Point P){	// hyperbolic angle from origin
+double hyp_ang(Point P){	// hyperbolic angle from origin; also works as Euclidean angle
 	double d;
 	d=hyp_dist(P);
 	if(d==0.0){
+		return(0.0);
+	};
+	return(atan2(P.y,P.x));
+};
+
+double Euc_ang(Point P){
+	Point Q;
+	Q=P;
+	Q.z=0.0;
+	if(norm(Q)==0.0){
 		return(0.0);
 	};
 	return(atan2(P.y,P.x));
@@ -310,11 +343,20 @@ Point hyperboloid_to_Poincare(Point P){	// change coordinates from hyperboloid t
 	return(Q);
 };
 
+Point Euclidean_to_sphere(Point Q){
+	Point R;
+	R.x=2.0*Q.x/(1.0+Q.x*Q.x+Q.y*Q.y);
+	R.y=2.0*Q.y/(1.0+Q.x*Q.x+Q.y*Q.y);
+	R.z=(1.0-Q.x*Q.x-Q.y*Q.y)/(1.0+Q.x*Q.x+Q.y*Q.y);
+	return(R);
+};
+
 Point hyperboloid_to_sphere(Point P){
 	Point Q,R;
 	Q=hyperboloid_to_Poincare(P);
-	R.x=2.0*Q.x/(1.0+Q.x*Q.x+Q.y*Q.y);
-	R.y=2.0*Q.y/(1.0+Q.x*Q.x+Q.y*Q.y);
-	R.z=(-1.0+Q.x*Q.x+Q.y*Q.y)/(1.0+Q.x*Q.x+Q.y*Q.y);
+//	R.x=2.0*Q.x/(1.0+Q.x*Q.x+Q.y*Q.y);
+//	R.y=2.0*Q.y/(1.0+Q.x*Q.x+Q.y*Q.y);
+//	R.z=(1.0-Q.x*Q.x-Q.y*Q.y)/(1.0+Q.x*Q.x+Q.y*Q.y);
+	R=Euclidean_to_sphere(Q);
 	return(R);
 };

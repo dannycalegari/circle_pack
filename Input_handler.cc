@@ -15,6 +15,7 @@ void input_routine(Packing &P, bool &finished){
 			cout << "[v] to toggle verbose \n";
 			cout << "[r] to read packing from a file \n";
 			cout << "[g] to change geometry \n";
+			cout << "[n] to normalize Euclidean coordinates \n";
 			cout << "[w] to write packing to a file \n";
 			cout << "[e] to write .eps output \n";
 			cout << "[q] to quit to graphics display \n";
@@ -44,6 +45,10 @@ void input_routine(Packing &P, bool &finished){
 			cin >> c;
 			P.change_geometry(c);
 			cout << "geometry changed.\n";
+			break;
+		case 'n':
+			cout << "normalizing coordinates.\n";
+			P.rescale();
 			break;
 		case 'w':
 			cout << "enter name of packing file to write to:";

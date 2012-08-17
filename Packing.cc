@@ -20,13 +20,15 @@ class Packing {
 	//	vector< vector<int> > edj;		// if edj[i][e]=f then edge f from vertex adj[i][e] lands at vertex i
 		vector< double > rad;			// list of radii.
 		vector< double > lab;			// list of labels. lab[i]=e^{-2rad[i]} (used for hyperbolic calculations)
-		vector<int>	inner;				// list of vertices not adjacent to 0
+		vector<int>	inner;				// list of vertices not adjacent to "infinite vertex"
 		char geometry;					// can be E for Euclidean, S for Spherical or H for hyperbolic
 		vector< vector<int> > lay;		// layout data
-		vector<int> dist;				// combinatorial distances to vertex 0
-		int maximum_distance;			// distance of furthest vertex from vertex 0
+		vector<int> dist;				// combinatorial distances to specified vertex
+		int maximum_distance;			// distance of furthest vertex from specified vertex
 		vector<Point> center;			// center list
 		bool verbose;					// gives lots of information
+		int	INFV,ZERV;					// which vertices are normalized to be at infinity, resp. zero
+		Matrix VIEWMATRIX;				// Matrix giving spherical point of view
 	public:
 		// administrative functions
 		int which_edge(int,int);		// which edge points from one vertex to the next?
@@ -41,9 +43,12 @@ class Packing {
 		int size(){
 			return((int) adj.size());
 		};
+		char write_geometry(){				// writes geometry
+			return(geometry);
+		};
 		
 		// functions to determine radii
-		void determine_inner_vertices();	// determines inner list
+		void determine_inner_vertices();	// determines inner list, i.e. vertices not adjacent to "infinite vertex"
 		void determine_labels();		// computes labels from radii (hyperbolic)
 		void determine_radii();			// computes radii of inner circles from labels (hyperbolic)
 		double fitness();				// Sum_i |angle(i)-2pi|
@@ -55,6 +60,7 @@ class Packing {
 		void Euclidean_correct_radius(int);		// adjust radius at i to new radius (Euclidean)
 		void find_radii(double);			// adjust until fitness <= accuracy
 		void write_radii();					// write radii
+		void rescale();					// normalize Euclidean coordinates so INFV and ZERV have conjugate radii
 		
 		// functions to read and write data
 		void read_packing(ifstream &);		// read data from file
@@ -62,17 +68,22 @@ class Packing {
 		void write_packing_eps(ofstream &);		// write data to .eps file
 
 		// functions to layout packing and compute centers
-		void compute_distances_to_vertex_0();	// compute combinatorial distances to vertex 0
-		void write_distances_to_vertex_0();		// write distances to vertex 0
+		void compute_distances_to_vertex_INFV();	// compute combinatorial distances to vertex INFV
+		void write_distances_to_vertex_INFV();		// write distances to vertex INFV
 		bool already_laid_out(int);			// has this vertex been laid out yet?
 		void determine_layout();			// figure out layout order of vertices 
 		void initialize_centers();			// set all centers to (0,0,1) which is 0 in every geometry
 		void determine_centers();			// figure out centers of vertices
 		void write_centers();				// write centers
 		void change_geometry(char);			// determines new radii/centers
-		
+
 		// graphic functions
 		void draw_circles();				// graphic routine
+		void XY_rotate(double);				// change VIEWMATRIX
+		void XZ_rotate(double);				// change VIEWMATRIX
+		void YZ_rotate(double);				// change VIEWMATRIX
+		void dilate(double);				// change VIEWMATRIX; rescale by factor
+		void reset_VIEWMATRIX();			// reset VIEWMATRIX to identity
 };
 
 int Packing::which_edge(int i, int j){	// returns e if adj[i][e]=j and returns -1 if there is no e.
@@ -95,7 +106,7 @@ void Packing::determine_inner_vertices(){
 	int i;
 	inner.clear();
 	for(i=1;i<(int) adj.size();i++){
-		if(which_edge(i,0)==-1){
+		if(which_edge(i,INFV)==-1){
 			inner.push_back(i);
 		};
 	};
@@ -104,22 +115,36 @@ void Packing::determine_inner_vertices(){
 void Packing::determine_labels(){
 	int i;
 	lab.clear();
-//	cout << "cleared labels \n";
 	lab.push_back(0.0);
-	for(i=1;i<(int) adj.size();i++){
+	for(i=0;i<(int) adj.size();i++){
 		lab.push_back(exp(-2.0*rad[i]));
-//		cout << rad[i] << " " << lab[i] << "\n";
 	};
 };
 
 void Packing::determine_radii(){
 	int i;
-//  int j;
-	for(i=1;i<(int) adj.size();i++){
-//	for(i=0;i<(int) inner.size();i++){
-//		j=inner[i];
-//		rad[j]=-log(lab[j])/2.0;
+	for(i=0;i<(int) adj.size();i++){
 		rad[i]=-log(lab[i])/2.0;
+	};
+};
+
+void Packing::rescale(){
+	int i;
+	double t;
+	if(geometry!='E'){
+		cout << "can only normalize in Euclidean geometry!\n";
+	} else {
+		t=-1.0*rad[INFV]*rad[ZERV];
+		if(verbose){
+			cout << "INFV is " << INFV << " with radius " << rad[INFV] << "\n";
+			cout << "ZERV is " << ZERV << " with radius " << rad[ZERV] << "\n";
+			cout << "product of inner and outer radii are " << t << "\n";
+		};
+		for(i=0;i<(int) adj.size();i++){
+			rad[i]=rad[i]/sqrt(t);
+			center[i].x=center[i].x/sqrt(t);
+			center[i].y=center[i].y/sqrt(t);
+		};
 	};
 };
 
@@ -154,7 +179,7 @@ double Packing::wedge(int i,int e){	// angle at vertex i between edge e and e+1
 	return(angle_at_C(rad[i]+rad[j],rad[i]+rad[k],rad[j]+rad[k],geometry));
 };
 
-double Packing::hyperbolic_wedge(int i,int e){	// angle at vertex i between e and e+1
+double Packing::hyperbolic_wedge(int i,int e){	// angle at vertex i between e and e+1; computed via labels
 	int j,k;	// i -e-> j, i -(e+1)-> k
 	j=adj[i][e];
 	k=adj[i][(e+1)%adj[i].size()];	
@@ -194,15 +219,15 @@ double Packing::interior_fitness(){
 	int i;
 	double fitness;
 	fitness=0.0;
-	for(i=1;i<(int) adj.size();i++){
-		if(which_edge(i,0)==-1){
+	for(i=0;i<(int) adj.size();i++){
+		if(i!=INFV && which_edge(i,INFV)==-1){	// i is not equal to or adjacent to INFV
 			fitness=fitness+fabs(TWOPI-angle(i));
 		};
 	};
 	return(fitness);
 };	
 
-void Packing::hyperbolic_correct_radius(int j){
+void Packing::hyperbolic_correct_radius(int j){	// determines "label of best fit" given angle and valence
 	double beta, delta;
 	double dk;
 	double vhat;
@@ -212,20 +237,16 @@ void Packing::hyperbolic_correct_radius(int j){
 	beta=sin(angle(j)/(2.0*dk));
 	delta=sin(TWOPI/(2.0*dk));
 	v=lab[j];
-//	cout << "beta " << beta << " delta " << delta << " v " << v << "\n";
 	vhat=(beta-sqrt(v))/((beta*v)-sqrt(v));
-//	cout << "vhat " << vhat << "\n";
 	if(vhat<0){
-//		cout << "negative vhat ";
 		vhat=0.0;
 	};
 	t=2.0*delta/(sqrt((1.0-vhat)*(1.0-vhat)+4.0*delta*delta*vhat) + (1.0-vhat));
-//	cout << "t " << t << "\n";
 	u=t*t;
-	lab[j]=u;
+	lab[j]=u;	// determine new label
 };
 
-void Packing::Euclidean_correct_radius(int j){
+void Packing::Euclidean_correct_radius(int j){	// determines "radius of best fit" given angle and valence
 	double beta, delta;
 	double dk;
 	double vhat;
@@ -252,18 +273,15 @@ void Packing::find_radii(double accuracy){	// adjust until fitness <= accuracy
 			cout << "initial fitness is " << interior_fitness() << "\n";
 		};
 		while(interior_fitness()>accuracy){
-			for(i=0;i<(int) inner.size();i++){
+			for(i=0;i<(int) inner.size();i++){	// adjust radii (actually, labels) of inner vertices
 				j=inner[i];
 				hyperbolic_correct_radius(j);
 			};
-			for(i=0;i<(int) adj[0].size();i++){
-				j=adj[0][i];
+			for(i=0;i<(int) adj[INFV].size();i++){	// for neighbors of infinite vertices
+				j=adj[INFV][i];
 				if(lab[j]>0.0000000001){
-					lab[j]=lab[j]/2.0;
-		//			lab[j]=lab[j]*lab[j];
+					lab[j]=lab[j]/2.0;		// make labels/radii smaller/bigger (but not too small/big)
 				};
-		//		cout << lab[j] << " ";
-		//		cout << "new label " << j << " is " << lab[j] << "\n";
 			};
 			step++;
 			if(verbose){
@@ -272,7 +290,9 @@ void Packing::find_radii(double accuracy){	// adjust until fitness <= accuracy
 				};
 			};
 		};
-		cout << "fitness is " << interior_fitness() << " after " << step << " steps. \n";
+		if(verbose){
+			cout << "fitness is " << interior_fitness() << " after " << step << " steps. \n";
+		};
 		determine_radii();	// convert from labels to radii
 	} else if (geometry=='E'){
 		cout << "Euclidean geometry.\n";
@@ -282,8 +302,10 @@ void Packing::find_radii(double accuracy){	// adjust until fitness <= accuracy
 				Euclidean_correct_radius(i);
 			};	
 			step++;
-			if(step%100==0){
-				cout << "fitness is " << fitness() << " after " << step << " steps. \n";
+			if(verbose){
+				if(step%100==0){
+					cout << "fitness is " << fitness() << " after " << step << " steps. \n";
+				};
 			};
 		};
 		cout << "fitness is " << fitness() << " after " << step << " steps. \n";
@@ -297,8 +319,12 @@ void Packing::write_radii(){
 	int i;
 	if(geometry=='H'){
 		cout << "circle " << 0 << " is the ideal circle \n";
-		for(i=1;i<(int) adj.size();i++){
-			cout << "circle " << i << " has radius " << rad[i] << "\n";
+		for(i=0;i<(int) adj.size();i++){
+			if(i==INFV){
+				cout << "circle " << INFV << " is the ideal circle \n";
+			} else {
+				cout << "circle " << i << " has radius " << rad[i] << "\n";
+			};
 		};
 	} else {
 		for(i=0;i<(int) adj.size();i++){
@@ -308,12 +334,14 @@ void Packing::write_radii(){
 };
 
 void Packing::read_packing(ifstream &packing_file){	// read packing from a file
+	/* should give the option of reading radii, geometry, INFV and ZERV; these are commented out */
 	int vertices, valence, i, j, k;
 	vector<int> L;	// adjacency_list
-	double d;
-	char c;
+//	double d;
+//	char c;
+//	int I;
 	
-	packing_file >> vertices;
+	packing_file >> vertices;	// reading adj
 	for(i=0;i<vertices;i++){
 		packing_file >> valence;
 		for(j=0;j<valence;j++){
@@ -323,21 +351,31 @@ void Packing::read_packing(ifstream &packing_file){	// read packing from a file
 		adj.push_back(L);
 		L.clear();
 	};
-	for(i=0;i<vertices;i++){
-		packing_file >> d;
-		rad.push_back(0.1);	// setting all initial radii to 0.1; should we really do this?
-	};
-	rad[0]=1.0;	// initialize radius 0 to 1.
+	
+	/* for the moment, just sets radii all to 0.1 and sets geometry to 'H', INFV to 0 and ZERV to -1 */
+//	if(packing_file.eof()){	// didn't bother to set radii
+		for(i=0;i<vertices;i++){ 
+			rad.push_back(0.1);	// setting all initial radii to 0.1; default value
+		};
+//	} else {
+	//	for(i=0;i<vertices;i++){
+	//		packing_file >> d;	// reading radii; 
+	//	};
+//	};
 
-	packing_file >> c;
-	if(c=='H'){
-		geometry='H';
-	} else if(c=='E'){
-		geometry='E';
-	} else if(c=='S'){
-		geometry='S';
-	} else {
-		geometry='H';
-	};
+//	if(packing_file.eof()){	// default values - old format
+		geometry='H';		
+		INFV=0;
+		ZERV=-1;
+//	} else {
+//		packing_file >> c;	// reading geometry
+//		geometry=c;
+//		packing_file >> I;	// reading INFV
+//		INFV=I;
+//		packing_file >> I;	// reading ZERV
+//		ZERV=I;
+//	};
+	verbose=false;			//	default values
+	VIEWMATRIX=ROT(0.0);	//	default values
 	return;
 };

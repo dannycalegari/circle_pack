@@ -10,7 +10,7 @@
 //	
 //};
 
-void Packing::compute_distances_to_vertex_0(){
+void Packing::compute_distances_to_vertex_INFV(){
 	bool all_found, one_not_done;
 	int i,j,nearest;
 	if(verbose){
@@ -18,10 +18,10 @@ void Packing::compute_distances_to_vertex_0(){
 	};
 	dist.clear();				// clear distance list
 	maximum_distance=0;					// reset maximum
-	dist.push_back(0);
-	for(i=1;i<(int) adj.size();i++){	// initialize distances
+	for(i=0;i<(int) adj.size();i++){	// initialize distances
 		dist.push_back(-1);
 	};
+	dist[INFV]=0;	// initial vertex
 	all_found=false;
 	while(all_found==false){
 		one_not_done=false;
@@ -46,10 +46,10 @@ void Packing::compute_distances_to_vertex_0(){
 	};
 };
 
-void Packing::write_distances_to_vertex_0(){
+void Packing::write_distances_to_vertex_INFV(){
 	int i;
 	for(i=0;i<(int) adj.size();i++){
-		cout << "vertex " << i << " is distance " << dist[i] << " to vertex 0.\n";
+		cout << "vertex " << i << " is distance " << dist[i] << " to vertex " << INFV << " (i.e. to vertex INFV).\n";
 	};
 	cout << "maximum distance is " << maximum_distance << "\n";
 };
@@ -73,13 +73,18 @@ void Packing::determine_layout(){			// figure out layout order of vertices
 	if(verbose){
 		cout << "determining layout order.\n";
 	};
-	if(geometry=='H'){	// don't lay out circle 0
+	if(geometry=='H'){	// don't lay out circle INFV
 		lay.clear();	// initialize layout vector
-		compute_distances_to_vertex_0();
-		for(i=0;i<(int) adj.size();i++){
-			if(dist[i]==maximum_distance){
-				first=i;					
+		compute_distances_to_vertex_INFV();
+		if(ZERV==-1 || ZERV==INFV || which_edge(ZERV,INFV)>-1){ // we don't yet have a vertex centered at 0
+			for(i=0;i<(int) adj.size();i++){
+				if(dist[i]==maximum_distance){
+					first=i;					
+					ZERV=i;		// new ZERV for future reference
+				};
 			};
+		} else {
+			first=ZERV;	// note: should *not be* adjacent to INFV
 		};
 		triangle.clear();
 		triangle.push_back(first);
@@ -92,9 +97,9 @@ void Packing::determine_layout(){			// figure out layout order of vertices
 		triangle.push_back(first);
 		triangle.push_back(-1);
 		lay.push_back(triangle);	// add second triangle (special case)
-		while((int) lay.size() < (int) adj.size()-1){	// hyperbolic geometry: don't lay out 0!
-			for(i=1;i<(int) adj.size();i++){	
-				if(already_laid_out(i)==false){		// not yet laid out
+		while((int) lay.size() < (int) adj.size()-1){	// hyperbolic geometry: don't lay out INFV!
+			for(i=0;i<(int) adj.size();i++){	
+				if(already_laid_out(i)==false && i!=INFV){	// not yet laid out; don't lay out INFV!
 					for(e=0;e<(int) adj[i].size();e++){
 						j=adj[i][e];
 						k=adj[i][(e+1)%(int) adj[i].size()];
@@ -161,9 +166,9 @@ void Packing::determine_centers(){			// figure out centers of vertices
 	initialize_centers();
 	if(verbose){
 		cout << "determining centers.\n";
-	};
-	if(geometry=='H'){
-		cout << "hyperbolic geometry.\n";
+		if(geometry=='H'){
+			cout << "hyperbolic geometry.\n";
+		};
 	};
 	i=lay[0][0];	// special case
 	j=lay[1][0];	// special case
@@ -191,12 +196,15 @@ void Packing::write_centers(){
 	cout << "geometry is " << geometry << "\n";
 	int i;
 	for(i=0;i<(int) adj.size();i++){
+		if(i==INFV){
+			cout << "INFV ";
+		};
 		cout << "vertex " << i << " has center " << center[i].x << " " << center[i].y << " " << center[i].z << "\n";
 	};
 };
 
 void Packing::change_geometry(char new_geometry){
-	Point Pcent,Pin,Pout,ORIGIN;
+	Point Pcent,Pin,Pout,ORIGIN,Q;
 	double d,theta;
 	double R;
 	int i;
@@ -207,39 +215,71 @@ void Packing::change_geometry(char new_geometry){
 	ORIGIN.y=0.0;
 	ORIGIN.z=1.0;
 	if(new_geometry=='E' && geometry=='H'){
-		for(i=1;i<(int) adj.size();i++){	// for each point
-			Pcent=center[i];	// hyperbolic center
-			d=hyp_dist(Pcent);		// hyperbolic distance to 0
-			theta=hyp_ang(Pcent);	// hyperbolic angle from 0
-			R=rad[i];		// hyperbolic radius
-			Pin=(ROT(theta)*HTR(d-R))(ORIGIN);
-			Pin=hyperboloid_to_Poincare(Pin);
-			Pout=(ROT(theta)*HTR(d+R))(ORIGIN);
-			Pout=hyperboloid_to_Poincare(Pout);
-			Pcent=midpoint(Pin,Pout);
-			R=Euc_dist(Pin,Pout)/2.0;
-//				sqrt((Pin.x-Pout.x)*(Pin.x-Pout.x)+(Pin.y-Pout.y)*(Pin.y-Pout.y))/2.0;
-			center[i]=Pcent;	// Euclidean center
-			rad[i]=R;			// Euclidean radius
+		for(i=0;i<(int) adj.size();i++){	// for each point
+			if(i==INFV){	// special case
+				center[i]=ORIGIN;
+				rad[i]=-1.0;
+			} else {
+				Pcent=center[i];	// hyperbolic center
+				d=hyp_dist(Pcent);		// hyperbolic distance to 0
+				theta=hyp_ang(Pcent);	// hyperbolic angle from 0
+				R=rad[i];		// hyperbolic radius
+				Pin=(ROT(theta)*HTR(d-R))(ORIGIN);
+				Pin=hyperboloid_to_Poincare(Pin);
+				Pout=(ROT(theta)*HTR(d+R))(ORIGIN);
+				Pout=hyperboloid_to_Poincare(Pout);
+				Pcent=midpoint(Pin,Pout);
+				R=Euc_dist(Pin,Pout)/2.0;
+				center[i]=Pcent;	// Euclidean center
+				rad[i]=R;			// Euclidean radius
+			};
 		};
 		geometry='E';
 	} else if(new_geometry=='S' && geometry=='H'){
-		rad[0]=PI/2.0;
-		for(i=1;i<(int) adj.size();i++){	// for each point
-			Pcent=center[i];	// hyperbolic center
-			d=hyp_dist(Pcent);		// hyperbolic distance to 0
-			theta=hyp_ang(Pcent);	// hyperbolic angle from 0
-			R=rad[i];		// hyperbolic radius
-			Pin=(ROT(theta)*HTR(d-R))(ORIGIN);
-			Pin=hyperboloid_to_sphere(Pin);
-			Pout=(ROT(theta)*HTR(d+R))(ORIGIN);
-			Pout=hyperboloid_to_sphere(Pout);
-			Pcent=midpoint(Pin,Pout);
-			Pcent=Pcent/norm(Pcent);
+		for(i=0;i<(int) adj.size();i++){	// for each point
+			if(i==INFV){	// special case
+				center[i]=ORIGIN;
+				center[i].z=-1.0;	// actually, we want center at (0,0,-1), i.e. infinity
+				rad[i]=PI/2.0;
+			} else {
+				Pcent=center[i];	// hyperbolic center
+				d=hyp_dist(Pcent);		// hyperbolic distance to 0
+				theta=hyp_ang(Pcent);	// hyperbolic angle from 0
+				R=rad[i];		// hyperbolic radius
+				Pin=(ROT(theta)*HTR(d-R))(ORIGIN);
+				Pin=hyperboloid_to_sphere(Pin);
+				Pout=(ROT(theta)*HTR(d+R))(ORIGIN);
+				Pout=hyperboloid_to_sphere(Pout);
+				Pcent=midpoint(Pin,Pout);
+				Pcent=Pcent/norm(Pcent);
+				R=sph_dist(Pin,Pout)/2.0;
+				center[i]=Pcent;	// Spherical center
+				rad[i]=R;			// Spherical radius
+			};
+		};
+		geometry='S';	
+	} else if(new_geometry=='S' && geometry=='E'){
+		for(i=0;i<(int) adj.size();i++){	// for each point
+			Pcent=center[i];	// Euclidean center
+			R=fabs(rad[i]);		// Euclidean radius
+			theta=Euc_ang(Pcent);	// Euclidean angle from origin
+			Q.x=cos(theta)*R;
+			Q.y=sin(theta)*R;
+			Q.z=0.0;
+			Pin=Pcent-Q;
+			Pin=Euclidean_to_sphere(Pin);
+			Pout=Pcent+Q;
+			Pout=Euclidean_to_sphere(Pout);
+			Pcent=midpoint(Pin,Pout);	// new Pcent
+			if(norm(Pcent)==0.0){
+				Pcent=ORIGIN;
+			} else {
+				Pcent=Pcent/norm(Pcent);
+			};
 			R=sph_dist(Pin,Pout)/2.0;
 			center[i]=Pcent;	// Spherical center
 			rad[i]=R;			// Spherical radius
 		};
 		geometry='S';	
-	};	
+	};
 };

@@ -47,5 +47,6 @@ void Packing::write_packing(ofstream &outfile){
 		outfile << rad[i] << "\n";
 	};
 	outfile << geometry << "\n";
+	outfile << INFV << "\n";
 	return;
 };
