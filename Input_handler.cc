@@ -5,6 +5,8 @@ void input_routine(Packing &P, bool &finished){
 	string s;
 	ifstream packing_input_file;
 	ofstream packing_output_file, eps_output_file;
+	int i;
+	Point Q;
 	
 	cout << "Current packing has " << P.size() << " circles. \n";
 	cout << "Enter command ([h] for help):";
@@ -18,6 +20,7 @@ void input_routine(Packing &P, bool &finished){
 			cout << "[n] to normalize Euclidean coordinates \n";
 			cout << "[w] to write packing to a file \n";
 			cout << "[e] to write .eps output \n";
+			cout << "[f] to find closest center \n";
 			cout << "[q] to quit to graphics display \n";
 			break;
 		case 'v':
@@ -65,6 +68,13 @@ void input_routine(Packing &P, bool &finished){
 			P.write_packing_eps(eps_output_file);
 			eps_output_file.close();
 			cout << "wrote .eps to file " << s << "\n";
+			break;
+		case 'f':
+			cout << "current geometry is " << P.write_geometry() << "\n";
+			cout << "enter coordinates of point: ";
+			cin >> Q.x >> Q.y >> Q.z;
+			i=P.find_closest_vertex(Q);
+			cout << "closest point is " << i << "\n";
 			break;
 		case 'q':
 			cout << "quit to graphics display.\n" 

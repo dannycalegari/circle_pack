@@ -76,6 +76,7 @@ class Packing {
 		void determine_centers();			// figure out centers of vertices
 		void write_centers();				// write centers
 		void change_geometry(char);			// determines new radii/centers
+		int find_closest_vertex(Point);		// finds vertex closest to given point
 
 		// graphic functions
 		void draw_circles();				// graphic routine
@@ -340,7 +341,7 @@ void Packing::read_packing(ifstream &packing_file){	// read packing from a file
 //	double d;
 //	char c;
 //	int I;
-	
+	adj.clear();				// initialize, in case we already have a packing
 	packing_file >> vertices;	// reading adj
 	for(i=0;i<vertices;i++){
 		packing_file >> valence;
@@ -355,7 +356,7 @@ void Packing::read_packing(ifstream &packing_file){	// read packing from a file
 	/* for the moment, just sets radii all to 0.1 and sets geometry to 'H', INFV to 0 and ZERV to -1 */
 //	if(packing_file.eof()){	// didn't bother to set radii
 		for(i=0;i<vertices;i++){ 
-			rad.push_back(0.1);	// setting all initial radii to 0.1; default value
+			rad.push_back(0.01);	// setting all initial radii to 0.01; default value
 		};
 //	} else {
 	//	for(i=0;i<vertices;i++){
@@ -375,7 +376,7 @@ void Packing::read_packing(ifstream &packing_file){	// read packing from a file
 //		packing_file >> I;	// reading ZERV
 //		ZERV=I;
 //	};
-	verbose=false;			//	default values
+	verbose=true;			//	default values
 	VIEWMATRIX=ROT(0.0);	//	default values
 	return;
 };

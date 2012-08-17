@@ -47,6 +47,7 @@ int main(int argc, char *argv[]){
 		packing_input_file.open(argv[1]);
 		P.read_packing(packing_input_file);
 		packing_input_file.close();
+		P.toggle_verbose();
 		P.find_radii(0.000000001);
 		P.determine_layout();
 		P.determine_centers();
@@ -54,13 +55,14 @@ int main(int argc, char *argv[]){
 		P.rescale();
 		P.change_geometry('S');
 		finished=true;
-	};
-
-	while(finished==false){
+	} else {
 		cout << "Welcome to interactive circle_pack.\n";
 		cout << "For a list of commands, type [h] for help.\n";
 		cout << "To run circle_pack non-interactively,\n";
-		cout << "Type .\circle_pack <filename.txt> \n";
+		cout << "Type circle_pack <filename.txt> \n";	
+	};
+
+	while(finished==false){
 		input_routine(P,finished);
 	};
 	

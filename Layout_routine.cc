@@ -85,6 +85,7 @@ void Packing::determine_layout(){			// figure out layout order of vertices
 			};
 		} else {
 			first=ZERV;	// note: should *not be* adjacent to INFV
+			cout << "We know ZERV, and it is " << ZERV << "\n";
 		};
 		triangle.clear();
 		triangle.push_back(first);
@@ -282,4 +283,24 @@ void Packing::change_geometry(char new_geometry){
 		};
 		geometry='S';	
 	};
+};
+
+int Packing::find_closest_vertex(Point Q){	// finds vertex closest to given point; assumes spherical geometry
+	int i,closest;
+	double d,e;
+	d=100000.0;	//initial value
+	for(i=0;i<size();i++){
+		if(geometry=='H'){
+			e=hyp_dist(Q, center[i]);
+		} else if (geometry=='E'){
+			e=Euc_dist(Q,center[i]);
+		} else if (geometry=='S'){
+			e=sph_dist(Q,center[i]);
+		};
+		if(e<d){
+			d=e;
+			closest=i;
+		};
+	};
+	return(closest);
 };
